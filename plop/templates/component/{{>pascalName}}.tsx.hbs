@@ -1,0 +1,10 @@
+import { clsx } from "utils"
+import type { I{{>pascalName}} } from "./types"
+
+export const {{>pascalName}}: FC<I{{>pascalName}}> = ({ {{#if ref}}ref,{{/if}} }) => {
+	return (
+		<{{lowerCase tag}}{{#if ref}} ref={ref}{{/if}} className={clsx()}>
+
+		</{{lowerCase tag}}>
+	)
+}

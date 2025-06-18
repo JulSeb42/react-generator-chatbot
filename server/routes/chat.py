@@ -10,7 +10,17 @@ chat_bp = Blueprint("chat", __name__)
 base_api_url = f"{base_api_url}/chat"
 
 
-@chat_bp.route(f"{base_api_url}", methods=["POST"])
+@chat_bp.route(f"{base_api_url}/chats", methods=["GET"])
+def get_all_chats():
+    chats = messages_col.find()
+    all_chats = []
+    for chat in chats:
+        chat["_id"] = str(chat["_id"])
+        all_chats.append(chat)
+    return all_chats
+
+
+@chat_bp.route(f"{base_api_url}/new-chat", methods=["POST"])
 def chat():
     data = request.get_json()
     user_input = data.get("message")
@@ -76,17 +86,7 @@ def chat():
     return jsonify({"reply": reply, "session_id": session_id})
 
 
-@chat_bp.route(f"{base_api_url}/chats", methods=["GET"])
-def get_all_chats():
-    chats = messages_col.find()
-    all_chats = []
-    for chat in chats:
-        chat["_id"] = str(chat["_id"])
-        all_chats.append(chat)
-    return all_chats
-
-
-@chat_bp.route("/add-snippet", methods=["POST"])
+@chat_bp.route(f"{base_api_url}/add-snippet", methods=["POST"])
 def add_snippet():
     data = request.get_json()
     text = data["text"]
