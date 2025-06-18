@@ -1,0 +1,16 @@
+{
+	"name": "final-project",
+	"version": "1.0.0",
+	"main": "index.js",
+	"author": "Julien <julien.sebag@me.com>",
+	"license": "MIT",
+	"scripts": {
+		"server": "cd server && flask --app app run --port=5005 --reload"
+	},
+	"dependencies": {
+		"concurrently": "^9.1.2"
+	},
+	"devDependencies": {
+		"prettier": "^3.5.3"
+	}
+}
