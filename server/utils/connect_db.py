@@ -10,5 +10,6 @@ mongodb_pw = os.getenv("MONGODB_PW")
 client = MongoClient(mongodb_cluster, 27017)
 db = client["final_project_ai"]
 messages_col = db["messages"]
+snippets_col = db["snippets"]
 
 base_api_url = "/api"

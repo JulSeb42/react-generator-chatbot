@@ -1,8 +1,9 @@
 from flask import Blueprint, jsonify, request
 import uuid
+import datetime
 import openai
 from utils.consts import base_api_url
-from utils.connect_db import messages_col
+from utils.connect_db import messages_col, snippets_col
 from utils.pc_index import index
 
 chat_bp = Blueprint("chat", __name__)
@@ -83,3 +84,30 @@ def get_all_chats():
         chat["_id"] = str(chat["_id"])
         all_chats.append(chat)
     return all_chats
+
+
+@chat_bp.route("/add-snippet", methods=["POST"])
+def add_snippet():
+    data = request.get_json()
+    text = data["text"]
+    tags = data.get("tags", [])
+
+    # Store in DB
+    result = snippets_col.insert_one(
+        {
+            "text": text,
+            "tags": tags,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        }
+    )
+
+    # Generate and upload to Pinecone
+    embedding = openai.Embedding.create(input=text, model="text-embedding-ada-002")[
+        "data"
+    ][0]["embedding"]
+    index.upsert(
+        [(str(result.inserted_id), embedding, {"text": text, "tags": ",".join(tags)})]
+    )
+
+    return jsonify({"status": "added"})
