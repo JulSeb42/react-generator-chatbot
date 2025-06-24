@@ -7,6 +7,12 @@ const SERVER_PATHS_ROOT = {
 export const SERVER_PATHS = {
 	CHAT: {
 		ROOT: SERVER_PATHS_ROOT.CHAT,
-		ALL_CHATS: "/chats",
+		NEW_CHAT: `${SERVER_PATHS_ROOT.CHAT}/new-chat`,
+		NEW_MESSAGE: (sessionId = ":sessionId") =>
+			`${SERVER_PATHS_ROOT.CHAT}/new-message/${sessionId}`,
+		SESSION_MESSAGES: (sessionId = ":sessionId") =>
+			`${SERVER_PATHS_ROOT.CHAT}/messages/${sessionId}`,
+		DELETE_SESSION: (sessionId = ":sessionId") =>
+			`${SERVER_PATHS_ROOT.CHAT}/delete-session/${sessionId}`,
 	},
 }

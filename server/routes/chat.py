@@ -1,9 +1,9 @@
 from flask import Blueprint, jsonify, request
+import json
 import uuid
 import datetime
 import openai
-from utils.consts import base_api_url
-from utils.connect_db import messages_col, snippets_col
+from utils.connect_db import base_api_url, messages_col, snippets_col
 from utils.pc_index import index
 
 chat_bp = Blueprint("chat", __name__)
@@ -17,14 +17,17 @@ def get_all_chats():
     for chat in chats:
         chat["_id"] = str(chat["_id"])
         all_chats.append(chat)
-    return all_chats
+    return all_chats, 201
 
 
 @chat_bp.route(f"{base_api_url}/new-chat", methods=["POST"])
 def chat():
     data = request.get_json()
     user_input = data.get("message")
-    session_id = data.get("session_id", str(uuid.uuid4()))
+    session_id = data.get("session_id")
+
+    if not session_id:
+        session_id = str(uuid.uuid4())
 
     if not user_input:
         return jsonify({"error": "No message provided"}), 400
@@ -75,15 +78,88 @@ def chat():
             model="gpt-4", messages=messages, temperature=0.3
         )
         reply = completion["choices"][0]["message"]["content"]
+
+        # Save assistant reply
+        result = messages_col.insert_one(
+            {
+                "session_id": session_id,
+                "role": "assistant",
+                "message": reply,
+                "created_at": datetime.datetime.now(),
+            }
+        )
+        assistant_message_id = str(result.inserted_id)
+
+        return (
+            jsonify(
+                {
+                    "_id": assistant_message_id,
+                    "session_id": session_id,
+                    "role": "assistant",
+                    "message": reply,
+                    "created_at": datetime.datetime.now(),
+                }
+            ),
+            201,
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-    # Save assistant reply
-    messages_col.insert_one(
-        {"session_id": session_id, "role": "assistant", "message": reply}
-    )
 
-    return jsonify({"reply": reply, "session_id": session_id})
+# @chat_bp.route(f"{base_api_url}/new-message/<session_id>")
+# def new_message(session_id):
+#     data = request.json()
+#     user_input = data.get("message")
+#     session_id = data.get("session_id")
+
+#     if not user_input:
+#         return jsonify({"error": "No message provided"}), 400
+
+#     return
+
+
+# @chat_bp.route(f"{base_api_url}/new-message/<session_id>")
+# def new_message(session_id):
+#     return
+
+
+@chat_bp.route(f"{base_api_url}/messages/<session_id>", methods=["GET"])
+def get_session_messages(session_id):
+    res = messages_col.find({"session_id": str(session_id)})
+    messages = list(res)
+    for message in messages:
+        message["_id"] = str(message["_id"])
+    return jsonify(messages), 201
+
+
+# @chat_bp.route(f"{base_api_url}/messages/<session_id>", methods=["GET"])
+# def get_session_messages(session_id):
+#     from utils.connect_db import get_db_connection
+
+#     with get_db_connection() as conn:
+#         cursor = conn.execute(
+#             "SELECT id, session_id, role, message, created_at FROM messages WHERE session_id = ? ORDER BY created_at",
+#             (session_id,),
+#         )
+#         messages = []
+#         for row in cursor.fetchall():
+#             messages.append(
+#                 {
+#                     "id": row["id"],
+#                     "session_id": row["session_id"],
+#                     "role": row["role"],
+#                     "message": row["message"],
+#                     "created_at": row["created_at"],
+#                 }
+#             )
+
+#     return jsonify(messages), 200
+
+
+@chat_bp.route(f"{base_api_url}/delete-session/<session_id>", methods=["DELETE"])
+def delete_session(session_id):
+    messages_col.delete_many({"session_id": session_id})
+    return "Your session has been deleted!"
 
 
 @chat_bp.route(f"{base_api_url}/add-snippet", methods=["POST"])
@@ -109,5 +185,29 @@ def add_snippet():
     index.upsert(
         [(str(result.inserted_id), embedding, {"text": text, "tags": ",".join(tags)})]
     )
-
     return jsonify({"status": "added"})
+
+
+# @chat_bp.route(f"{base_api_url}/add-snippet", methods=["POST"])
+# def add_snippet():
+#     data = request.get_json()
+#     text = data["text"]
+#     tags = data.get("tags", [])
+
+#     from utils.connect_db import get_db_connection
+
+#     # Store in SQLite DB
+#     with get_db_connection() as conn:
+#         cursor = conn.execute(
+#             "INSERT INTO snippets (content, tags) VALUES (?, ?)", (text, ",".join(tags))
+#         )
+#         conn.commit()
+#         snippet_id = cursor.lastrowid
+
+#     # Generate and upload to Pinecone
+#     embedding = openai.Embedding.create(input=text, model="text-embedding-ada-002")[
+#         "data"
+#     ][0]["embedding"]
+#     index.upsert([(str(snippet_id), embedding, {"text": text, "tags": ",".join(tags)})])
+
+#     return jsonify({"status": "added", "id": snippet_id})

@@ -4,13 +4,24 @@ Import routes + init Flask
 
 from flask import Flask
 from flask_cors import CORS
+import openai
+from pinecone import Pinecone
 from routes.chat import chat_bp
 from utils.connect_db import base_api_url
+from utils.consts import OPENAI_API_KEY, PINECONE_API_KEY, TOKEN_SECRET, CLIENT_URI
 
 app = Flask(__name__)
+app.secret_key = TOKEN_SECRET
+CORS(app)
+CORS(app, origins=[CLIENT_URI])
 CORS(app, resources={r"/*": {"origins": "*"}})
-CORS(app, resources={r"/users/*": {"origins": "*"}})
-CORS(app, resources={r"chat/*": {"origins": "*"}})
+CORS(app, resources={r"/api/*": {"origins": CLIENT_URI}})
+CORS(app, resources={r"/projects/*": {"origins": "*"}})
+CORS(app, resources={r"auth/*": {"origins": "*"}})
+CORS(app, resources={r"contact/*": {"origins": "*"}})
+
+openai.api_key = OPENAI_API_KEY
+pc = Pinecone(api_key=PINECONE_API_KEY)
 
 
 @app.route(f"{base_api_url}/", methods=["GET"])
@@ -23,18 +34,18 @@ def index():
     return "Hello World"
 
 
-@app.after_request
-def set_content_type(response):
-    """Sets headers for CORS
+# @app.after_request
+# def set_content_type(response):
+#     """Sets headers for CORS
 
-    Args:
-            response (_type_): _description_
+#     Args:
+#             response (_type_): _description_
 
-    Returns:
-            _type_: _description_
-    """
-    response.headers["Content-Type"] = "application/json"
-    return response
+#     Returns:
+#             _type_: _description_
+#     """
+#     response.headers["Content-Type"] = "application/json"
+#     return response
 
 
 # Routes

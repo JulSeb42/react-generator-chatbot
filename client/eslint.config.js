@@ -56,7 +56,7 @@ export default [
 			],
 			"no-restricted-exports": [
 				"warn",
-				{ restrictDefaultExports: { direct: true } },
+				{ restrictDefaultExports: { direct: false } },
 			],
 			"react/prop-types": "off",
 			"no-empty-pattern": "warn",
@@ -64,7 +64,12 @@ export default [
 		},
 	},
 	{
-		ignores: ["eslint.config.js", "plop/*", "vite.config.ts"],
+		ignores: [
+			"eslint.config.js",
+			"plop/*",
+			"vite.config.ts",
+			"src/generated/*",
+		],
 	},
 	{ files: ["src/*"] },
 ]

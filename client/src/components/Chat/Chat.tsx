@@ -3,32 +3,39 @@ import axios from "axios"
 import SyntaxHighlighter from "react-syntax-highlighter"
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism"
 import { clsx } from "utils"
+import { chatService } from "api"
+import type { Chat as ChatType } from "types"
 import type { IChat } from "./types"
 
-type Message = { role: "user" | "assistant"; content: string }
+// type Message = { role: "user" | "assistant"; content: string }
 
-export const Chat: FC<IChat> = ({}) => {
+export const Chat: FC<IChat> = ({ messages, setMessages }) => {
 	const [input, setInput] = useState("")
-	const [messages, setMessages] = useState<Array<Message>>([])
+	// const [messages, setMessages] = useState<Array<Message>>([])
 	const [loading, setLoading] = useState(false)
 
 	const handleSend = async () => {
 		if (!input.trim()) return
 		setLoading(true)
 
-		const userMessage: Message = { role: "user", content: input }
-		setMessages(prev => [...prev, userMessage])
+		const userMessage = { role: "user", content: input }
+		setMessages(prev => [...prev, { role: "user", message: input }] as any)
 
 		try {
-			const res = await axios.post("http://localhost:5000/chat", {
-				message: input,
-			})
-
-			const botReply: Message = {
-				role: "assistant",
-				content: res.data.reply,
-			}
-			setMessages(prev => [...prev, botReply])
+			// const res = await axios.post(
+			// 	"http://localhost:8000/chat/new-chat",
+			// 	{
+			// 		message: input,
+			// 	},
+			// )
+			const res = await chatService.newChat(input)
+			setMessages(
+				prev =>
+					[
+						...prev,
+						{ role: "assistant", content: res.data.message },
+					] as any,
+			)
 		} catch (error: any) {
 			alert("Error: " + error.message)
 		}
@@ -40,7 +47,7 @@ export const Chat: FC<IChat> = ({}) => {
 	return (
 		<div className={clsx()}>
 			<div style={{ minHeight: 300, marginBottom: 20 }}>
-				{messages.map((msg, idx) => (
+				{/* {messages.map((msg, idx) => (
 					<div key={idx} style={{ margin: "1rem 0" }}>
 						<strong>{msg.role === "user" ? "You" : "Bot"}:</strong>
 						{msg.role === "assistant" &&
@@ -52,7 +59,8 @@ export const Chat: FC<IChat> = ({}) => {
 							</pre>
 						)}
 					</div>
-				))}
+				))} */}
+				{loading && <p>Loading...</p>}
 			</div>
 
 			<textarea

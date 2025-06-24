@@ -1,15 +1,12 @@
 import openai
-from pinecone import Pinecone, ServerlessSpec
+from pinecone import ServerlessSpec
 import sys
+import os
 
-sys.path.append(".")
-from consts import PINECONE_API_KEY, OPENAI_API_KEY
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from app import pc
 
-
-pc = Pinecone(api_key=PINECONE_API_KEY)
 pc_index = "ironhack-final-project"
-
-openai.api_key = OPENAI_API_KEY
 
 if pc_index not in pc.list_indexes().names():
     pc.create_index(

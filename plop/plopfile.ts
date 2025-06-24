@@ -38,14 +38,4 @@ export default (plop: NodePlopAPI) => {
 	generateRoute(plop) // yarn plop:r
 	generateSingleComponent(plop) // yarn plop:s
 	/* Prepend function - DO NOT REMOVE */
-
-	// generateComponent(plop) // yarn plop:c
-	// generateSingleComponent(plop) // yarn plop:sc
-	// generatePage(plop) // yarn plop:p
-	// generateType(plop) // yarn plop:ty
-	// generateContext(plop) // yarn plop:co
-	//
-
-	// generateRoute(plop) // yarn plop:r
-	// generateModel(plop) // yarn plop:m
 }

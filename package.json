@@ -6,9 +6,10 @@
 	"license": "MIT",
 	"scripts": {
 		"server": "cd server && flask --app app run --port=5005 --reload",
-		"serve": "cd server && gunicorn app:app",
+		"gunicorn": "cd server && gunicorn app:app --reload",
+		"serve": "gunicorn server.app:app",
 		"client": "cd client && yarn dev",
-		"dev": "concurrently --kill-others 'yarn serve' 'yarn client'",
+		"dev": "concurrently --kill-others 'yarn gunicorn' 'yarn client'",
 		"plop": "cross-env NODE_OPTIONS='--import tsx' plop --plopfile=plop/plopfile.ts",
 		"plop:c": "yarn plop component",
 		"plop:sc": "yarn plop single-component",
