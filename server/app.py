@@ -7,6 +7,7 @@ from flask_cors import CORS
 import openai
 from pinecone import Pinecone
 from routes.chat import chat_bp
+from routes.populate_from_hf import populate_bp
 from utils.connect_db import base_api_url
 from utils.consts import OPENAI_API_KEY, PINECONE_API_KEY, TOKEN_SECRET, CLIENT_URI
 
@@ -50,3 +51,4 @@ def index():
 
 # Routes
 app.register_blueprint(chat_bp)
+app.register_blueprint(populate_bp)

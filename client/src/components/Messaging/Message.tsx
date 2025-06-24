@@ -14,11 +14,12 @@ export const Message: FC<IMessage> = ({ message }) => {
 		>
 			<Markdown
 				className={clsx(
+					"max-w-full message",
 					// "max-w-[600px]",
 					// message.role === "user"
 					// 	? "backdrop-bg  "
 					// 	: "backdrop-bg p-2 rounded-lg",
-					"[&>*]:max-w-full",
+					"[&>*]:max-w-full [&>*>*]:max-w-full",
 				)}
 				options={optionsMarkdown}
 			>
@@ -37,7 +38,7 @@ const CodeBlock = ({ children }: { children: Children }) => {
 }
 
 const Flex = ({ children }: { children?: Children }) => {
-	return <div className="flex flex-col gap-2">{children}</div>
+	return <div className="flex flex-col gap-2 message">{children}</div>
 }
 
 const optionsMarkdown: MarkdownToJSX.Options = {

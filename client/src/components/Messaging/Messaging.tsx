@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react"
 import { clsx } from "utils"
 import { Message } from "./Message"
 import { Input } from "./Input"
@@ -9,11 +10,21 @@ export const Messaging: FC<IMessaging> = ({
 	isLoading,
 	setIsLoading,
 }) => {
+	const messagesEndRef = useRef<HTMLDivElement>(null)
+
+	const scrollToBottom = () => {
+		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+	}
+
+	useEffect(() => {
+		scrollToBottom()
+	}, [chat, isLoading])
+
 	return (
 		<div
-		className={clsx(
-			"flex flex-col items-center gap-4 mx-auto p-4 border-1 border-white border-solid rounded-xl w-full max-h-[calc(100svh-48px*2-32px-24px)] grow",
-		)}
+			className={clsx(
+				"flex flex-col items-center gap-4 mx-auto p-4 border-1 border-white border-solid rounded-xl w-full max-h-[calc(100svh-48px*2-32px-24px)] grow",
+			)}
 		>
 			<div className="flex flex-col gap-4 w-full overflow-y-scroll grow">
 				{chat
@@ -27,6 +38,8 @@ export const Messaging: FC<IMessaging> = ({
 					))}
 
 				{isLoading && <p>Thinking...</p>}
+
+				<div ref={messagesEndRef} />
 			</div>
 
 			<hr className="bg-white border-none w-full h-0.5" />

@@ -79,8 +79,8 @@ export const Input: FC<IInput> = ({
 
 			<button
 				type="submit"
-				disabled={isLoading}
-				className="inline-flex items-center h-[32px]"
+				disabled={isLoading || !message.length}
+				className="inline-flex items-center h-[32px] disabled:text-gray-500"
 			>
 				<BiSend />
 			</button>
