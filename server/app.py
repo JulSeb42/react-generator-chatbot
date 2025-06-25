@@ -21,23 +21,33 @@ from utils.consts import (
 app = Flask(__name__)
 app.secret_key = TOKEN_SECRET
 
+# CORS(app)
+# CORS(app, origins=[CLIENT_URI])
+# CORS(app, resources={r"/*": {"origins": "*"}})
+# CORS(app, resources={r"/api/*": {"origins": CLIENT_URI}})
+# CORS(app, resources={r"/chat/*": {"origins": CLIENT_URI}})
+# CORS(app, resources={r"/populate/*": {"origins": CLIENT_URI}})
+# CORS(app, resources={r"/api/*": {"origins": [CLIENT_URI, "http://localhost:5173"]}})
 # CORS(
 #     app,
-#     resources={
-#         r"/api/*": {
-#             "origins": [CLIENT_URI, "http://localhost:5173", "http://localhost:3000"],
-#             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-#             "allow_headers": ["Content-Type", "Authorization"],
-#         }
-#     },
+#     origins=["http://localhost:5173", "http://localhost:3000", CLIENT_URI],
+#     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+#     allow_headers=["Content-Type", "Authorization", "Accept"],
+#     supports_credentials=True,
 # )
-CORS(app)
-CORS(app, origins=[CLIENT_URI])
-CORS(app, resources={r"/*": {"origins": "*"}})
-CORS(app, resources={r"/api/*": {"origins": CLIENT_URI}})
-CORS(app, resources={r"/chat/*": {"origins": CLIENT_URI}})
-CORS(app, resources={r"/populate/*": {"origins": CLIENT_URI}})
-CORS(app, resources={r"/api/*": {"origins": [CLIENT_URI, "http://localhost:5173"]}})
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": ["http://localhost:5173", "http://localhost:3000", CLIENT_URI],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization", "Accept"],
+            "expose_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True,
+            "max_age": 600,
+        }
+    },
+)
 
 openai.api_key = OPENAI_API_KEY
 langsmith_client = Client()
@@ -76,7 +86,8 @@ def monitoring_info():
 app.register_blueprint(chat_bp)
 app.register_blueprint(populate_bp)
 
-# In your app.py
+# Run app
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    print(f"Starting server on port {port}")
+    app.run(host="0.0.0.0", port=port, debug=True)
