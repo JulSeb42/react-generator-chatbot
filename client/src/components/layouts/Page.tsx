@@ -16,8 +16,10 @@ export const Page: FC<IPage> = ({
 				cover={cover}
 			/>
 
-			<section>
-				<main>{children}</main>
+			<section className="flex justify-center">
+				<main className="flex flex-col gap-6 mx-auto p-12 w-full max-w-[800px] h-svh">
+					{children}
+				</main>
 			</section>
 		</>
 	)

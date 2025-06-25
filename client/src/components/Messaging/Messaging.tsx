@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react"
 import { clsx } from "utils"
 import { Message } from "./Message"
 import { Input } from "./Input"
+import { Loading } from "components/Loading"
 import type { IMessaging } from "./types"
 
 export const Messaging: FC<IMessaging> = ({
@@ -27,17 +28,17 @@ export const Messaging: FC<IMessaging> = ({
 			)}
 		>
 			<div className="flex flex-col gap-4 w-full overflow-y-scroll grow">
-				{chat
-					.sort((a, b) =>
-						new Date(a.created_at) > new Date(b.created_at)
-							? -1
-							: 0,
-					)
-					.map(message => (
-						<Message message={message} key={message._id} />
-					))}
+				{!chat.length && (
+					<div className="flex justify-center items-center w-full h-full">
+						<p>No message yet.</p>
+					</div>
+				)}
 
-				{isLoading && <p>Thinking...</p>}
+				{chat.map(message => (
+					<Message message={message} key={message._id} />
+				))}
+
+				{isLoading && <Loading />}
 
 				<div ref={messagesEndRef} />
 			</div>

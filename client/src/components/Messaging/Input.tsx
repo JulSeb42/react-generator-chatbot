@@ -2,6 +2,7 @@ import { useState, useRef, type KeyboardEvent } from "react"
 import { BiSend } from "react-icons/bi"
 import { toast } from "react-toastify"
 import { chatService } from "api"
+import { DeleteChat } from "./DeleteChat"
 import type { Chat } from "types"
 
 export const Input: FC<IInput> = ({
@@ -60,6 +61,7 @@ export const Input: FC<IInput> = ({
 				toast.error("An error occurred, check console")
 				console.log(err)
 			})
+			.finally(() => setIsLoading(false))
 	}
 
 	return (
@@ -74,6 +76,7 @@ export const Input: FC<IInput> = ({
 				onChange={e => setMessage(e.target.value)}
 				onKeyDown={handleKeyDown}
 				rows={1}
+				placeholder="Type your message here..."
 				autoFocus
 			/>
 
@@ -84,6 +87,8 @@ export const Input: FC<IInput> = ({
 			>
 				<BiSend />
 			</button>
+
+			<DeleteChat chats={chats} setChats={setChats} />
 		</form>
 	)
 }
