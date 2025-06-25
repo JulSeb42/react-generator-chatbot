@@ -18,6 +18,7 @@ CORS(app, origins=[CLIENT_URI])
 CORS(app, resources={r"/*": {"origins": "*"}})
 CORS(app, resources={r"/api/*": {"origins": CLIENT_URI}})
 CORS(app, resources={r"/chat/*": {"origins": CLIENT_URI}})
+CORS(app, resources={r"/populate/*": {"origins": CLIENT_URI}})
 
 openai.api_key = OPENAI_API_KEY
 

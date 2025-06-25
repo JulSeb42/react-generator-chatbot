@@ -13,5 +13,4 @@ const config: Config = {
 	},
 }
 
-// eslint-disable-next-line
 export default config
