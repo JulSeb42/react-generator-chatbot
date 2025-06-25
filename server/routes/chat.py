@@ -1,85 +1,111 @@
 from flask import Blueprint, jsonify, request
-import json
 import uuid
 import datetime
 import openai
+from langsmith import traceable
+import base64
 from utils.connect_db import base_api_url, messages_col, snippets_col
 from utils.pc_index import index
+from utils.langchain_service import react_assistant
 
 chat_bp = Blueprint("chat", __name__)
 base_api_url = f"{base_api_url}/chat"
 
 
-@chat_bp.route(f"{base_api_url}/chats", methods=["GET"])
-def get_all_chats():
-    chats = messages_col.find()
-    all_chats = []
-    for chat in chats:
-        chat["_id"] = str(chat["_id"])
-        all_chats.append(chat)
-    return all_chats, 201
+@chat_bp.route(f"{base_api_url}/test", methods=["GET", "POST"])
+def test_chat_route():
+    return {
+        "message": "LangChain-powered chat is working!",
+        "method": request.method,
+    }, 200
 
 
 @chat_bp.route(f"{base_api_url}/new-chat", methods=["POST"])
+@traceable(run_type="tool", name="chat_endpoint")
 def chat():
-    data = request.get_json()
-    user_input = data.get("message")
-    session_id = data.get("session_id")
+    try:
+        print(f"=== NEW CHAT REQUEST ===")
+        print(f"Request content type: {request.content_type}")
 
-    if not session_id:
-        session_id = str(uuid.uuid4())
+        # Handle both JSON and FormData
+        if request.content_type and "multipart/form-data" in request.content_type:
+            user_input = request.form.get("message", "")
+            session_id = request.form.get("session_id")
+            image_file = request.files.get("image")
+            print(
+                f"FormData received - Message: '{user_input}', Image: {image_file is not None}"
+            )
+        else:
+            data = request.get_json()
+            user_input = data.get("message", "") if data else ""
+            session_id = data.get("session_id") if data else None
+            image_file = None
+            print(f"JSON received - Message: '{user_input}'")
 
-    if not user_input:
-        return jsonify({"error": "No message provided"}), 400
+        if not session_id:
+            session_id = str(uuid.uuid4())
 
-    # Save user message
-    messages_col.insert_one(
-        {"session_id": session_id, "role": "user", "message": user_input}
-    )
+        if not user_input and not image_file:
+            return jsonify({"error": "No message or image provided"}), 400
 
-    # Embed user input and query Pinecone
-    embedding = openai.Embedding.create(
-        input=user_input, model="text-embedding-ada-002"
-    )["data"][0]["embedding"]
+        # Process image if provided using LangChain
+        image_description = ""
+        if image_file:
+            print(f"Processing image: {image_file.filename}")
+            try:
+                # Read and encode image
+                image_data = image_file.read()
+                base64_image = base64.b64encode(image_data).decode("utf-8")
+                print(
+                    f"Image encoded successfully, size: {len(base64_image)} characters"
+                )
 
-    pinecone_result = index.query(vector=embedding, top_k=3, include_metadata=True)
+                # Use LangChain for image analysis
+                print("Calling LangChain Vision analysis...")
+                image_description = react_assistant.analyze_image(base64_image)
+                print(
+                    f"LangChain Vision SUCCESS! Response length: {len(image_description)} characters"
+                )
 
-    # Build context from Pinecone matches
-    context_snippets = [
-        match["metadata"]["text"]
-        for match in pinecone_result.get("matches", [])
-        if "text" in match["metadata"]
-    ]
-    context = "\n\n".join(context_snippets)
+            except Exception as e:
+                print(f"Vision analysis error: {str(e)}")
+                image_description = (
+                    f"Error analyzing image: {str(e)}. Please describe the UI manually."
+                )
 
-    # Build messages for OpenAI
-    system_prompt = (
-        "You are a senior React developer. Generate high-quality React code based on user requests.\n"
-        "Use functional components, hooks, and modern best practices. If relevant, include helpful comments."
-    )
+        # Combine user input with image description
+        if image_description:
+            combined_input = (
+                f"{user_input}\n\nUI Analysis: {image_description}"
+                if user_input
+                else f"Generate React code for this UI: {image_description}"
+            )
+        else:
+            combined_input = user_input
 
-    messages = [
-        {"role": "system", "content": system_prompt},
-    ]
+        print(f"Final combined input: {combined_input[:300]}...")
 
-    if context:
-        messages.append(
+        # Save user message to database
+        messages_col.insert_one(
             {
-                "role": "system",
-                "content": f"Here are some related examples:\n\n{context}",
+                "session_id": session_id,
+                "role": "user",
+                "message": combined_input,
+                "has_image": bool(image_file),
+                "created_at": datetime.datetime.now(),
             }
         )
 
-    messages.append({"role": "user", "content": user_input})
-
-    # Get completion from OpenAI
-    try:
-        completion = openai.ChatCompletion.create(
-            model="gpt-4", messages=messages, temperature=0.3
+        # Generate response using LangChain RAG chain
+        print("Generating response with LangChain...")
+        reply = react_assistant.generate_code(
+            user_input=user_input if not image_description else combined_input,
+            image_description=image_description if image_description else None,
         )
-        reply = completion["choices"][0]["message"]["content"]
 
-        # Save assistant reply
+        print(f"LangChain response generated, length: {len(reply)} characters")
+
+        # Save assistant reply to database
         result = messages_col.insert_one(
             {
                 "session_id": session_id,
@@ -88,21 +114,26 @@ def chat():
                 "created_at": datetime.datetime.now(),
             }
         )
-        assistant_message_id = str(result.inserted_id)
 
+        # Return the response
         return (
             jsonify(
                 {
-                    "_id": assistant_message_id,
+                    "_id": str(result.inserted_id),
                     "session_id": session_id,
                     "role": "assistant",
                     "message": reply,
-                    "created_at": datetime.datetime.now(),
+                    "created_at": datetime.datetime.now().isoformat(),
                 }
             ),
             201,
         )
+
     except Exception as e:
+        print(f"Chat error: {str(e)}")
+        import traceback
+
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 

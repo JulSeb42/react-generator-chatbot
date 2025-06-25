@@ -6,11 +6,19 @@ gunicorn==23.0.0
 # Database
 pymongo==4.13.2
 
-# AI/ML
-openai==0.28.0
-pinecone-client==3.2.2
+# LangChain - Python 3.13 compatible versions
+langchain==0.3.9
+langsmith==0.1.129
+langchain-openai==0.2.9
+langchain-community==0.3.9
 
-# Hugging Face datasets
+# AI/ML - Updated OpenAI version to match langchain-openai requirements
+openai>=1.54.0
+
+# Vector database
+pinecone-client==5.0.1
+
+# Hugging Face datasets - Python 3.13 compatible
 datasets==3.2.0
 transformers==4.48.0
 
@@ -21,8 +29,8 @@ requests==2.32.4
 # Development tools
 pylint==3.3.7
 
-# Core dependencies
-numpy==2.3.0
+# Core dependencies - Python 3.13 compatible versions
+numpy>=2.0.0
 certifi==2025.6.15
 urllib3==2.4.0
 click==8.2.1
@@ -35,3 +43,8 @@ blinker==1.9.0
 # Async support
 aiohttp==3.12.13
 httpx==0.28.1
+
+# Additional dependencies that might be needed
+packaging>=23.0
+typing-extensions>=4.0.0
+pydantic>=2.0.0
