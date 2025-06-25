@@ -21,23 +21,23 @@ from utils.consts import (
 app = Flask(__name__)
 app.secret_key = TOKEN_SECRET
 
-CORS(
-    app,
-    resources={
-        r"/api/*": {
-            "origins": [CLIENT_URI, "http://localhost:5173", "http://localhost:3000"],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"],
-        }
-    },
-)
-# CORS(app)
-# CORS(app, origins=[CLIENT_URI])
-# CORS(app, resources={r"/*": {"origins": "*"}})
-# CORS(app, resources={r"/api/*": {"origins": CLIENT_URI}})
-# CORS(app, resources={r"/chat/*": {"origins": CLIENT_URI}})
-# CORS(app, resources={r"/populate/*": {"origins": CLIENT_URI}})
-# CORS(app, resources={r"/api/*": {"origins": [CLIENT_URI, "http://localhost:5173"]}})
+# CORS(
+#     app,
+#     resources={
+#         r"/api/*": {
+#             "origins": [CLIENT_URI, "http://localhost:5173", "http://localhost:3000"],
+#             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+#             "allow_headers": ["Content-Type", "Authorization"],
+#         }
+#     },
+# )
+CORS(app)
+CORS(app, origins=[CLIENT_URI])
+CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/api/*": {"origins": CLIENT_URI}})
+CORS(app, resources={r"/chat/*": {"origins": CLIENT_URI}})
+CORS(app, resources={r"/populate/*": {"origins": CLIENT_URI}})
+CORS(app, resources={r"/api/*": {"origins": [CLIENT_URI, "http://localhost:5173"]}})
 
 openai.api_key = OPENAI_API_KEY
 langsmith_client = Client()

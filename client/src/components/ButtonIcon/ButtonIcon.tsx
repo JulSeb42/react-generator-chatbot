@@ -2,13 +2,16 @@ import { useState } from "react"
 import { clsx } from "utils"
 import type { IButtonIcon } from "./types"
 
+const BUTTON_CLASSES =
+	"inline-flex items-center h-[32px] text-white disabled:text-gray-500 cursor-pointer"
+
 export const ButtonIcon: FC<IButtonIcon> = ({ icon, tooltip, ...rest }) => {
 	const [isVisible, setIsVisible] = useState(false)
 
 	if (tooltip)
 		return (
 			<span
-				className="relative"
+				className="relative cursor-pointer"
 				onMouseEnter={() => setIsVisible(true)}
 				onMouseLeave={() => setIsVisible(false)}
 			>
@@ -24,20 +27,14 @@ export const ButtonIcon: FC<IButtonIcon> = ({ icon, tooltip, ...rest }) => {
 
 				<span className="sr-only">{tooltip}</span>
 
-				<button
-					className="inline-flex items-center h-[32px] disabled:text-gray-500"
-					{...rest}
-				>
+				<button className={clsx(BUTTON_CLASSES)} {...rest}>
 					{icon}
 				</button>
 			</span>
 		)
 
 	return (
-		<button
-			className="inline-flex items-center h-[32px] disabled:text-gray-500"
-			{...rest}
-		>
+		<button className={clsx(BUTTON_CLASSES)} {...rest}>
 			{icon}
 		</button>
 	)
