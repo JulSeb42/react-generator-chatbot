@@ -1,7 +1,6 @@
-import Markdown, { type MarkdownToJSX } from "markdown-to-jsx"
-import SyntaxHighlighter from "react-syntax-highlighter"
-import { a11yDark } from "react-syntax-highlighter/dist/esm/styles/hljs"
+import Markdown from "markdown-to-jsx"
 import { clsx } from "utils"
+import { optionsMarkdown } from "./options-markdown"
 import type { Chat } from "types"
 
 export const Message: FC<IMessage> = ({ message }) => {
@@ -15,11 +14,8 @@ export const Message: FC<IMessage> = ({ message }) => {
 			<Markdown
 				className={clsx(
 					"max-w-full message",
-					// "max-w-[600px]",
-					// message.role === "user"
-					// 	? "backdrop-bg  "
-					// 	: "backdrop-bg p-2 rounded-lg",
 					"[&>*]:max-w-full [&>*>*]:max-w-full",
+					"[&>a]:underline",
 				)}
 				options={optionsMarkdown}
 			>
@@ -27,27 +23,6 @@ export const Message: FC<IMessage> = ({ message }) => {
 			</Markdown>
 		</div>
 	)
-}
-
-const CodeBlock = ({ children }: { children: Children }) => {
-	return (
-		<SyntaxHighlighter language="javascript" style={a11yDark}>
-			{String((children as any).props.children).replace(/\n$/, "")}
-		</SyntaxHighlighter>
-	)
-}
-
-const Flex = ({ children }: { children?: Children }) => {
-	return <div className="flex flex-col gap-2 message">{children}</div>
-}
-
-const optionsMarkdown: MarkdownToJSX.Options = {
-	wrapper: Flex,
-	overrides: {
-		pre: {
-			component: CodeBlock,
-		},
-	},
 }
 
 interface IMessage {

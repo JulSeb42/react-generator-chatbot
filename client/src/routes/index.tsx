@@ -14,14 +14,16 @@ const App = () => {
 	useEffect(() => {
 		if (sessionId) {
 			setIsLoading(true)
-			chatService
-				.sessionMessages(sessionId)
-				.then(res => setChat(res.data))
-				.catch(err => {
-					toast.error("An error occurred, check console")
-					console.log(err)
-				})
-				.finally(() => setIsLoading(false))
+			setTimeout(() => {
+				chatService
+					.sessionMessages(sessionId)
+					.then(res => setChat(res.data))
+					.catch(err => {
+						toast.error("An error occurred, check console")
+						console.log(err)
+					})
+					.finally(() => setIsLoading(false))
+			}, 2000)
 		}
 	}, [sessionId])
 

@@ -1,6 +1,7 @@
 import { toast } from "react-toastify"
 import { BiTrash } from "react-icons/bi"
 import { chatService } from "api"
+import { ButtonIcon } from "components/ButtonIcon"
 import type { Chat } from "types"
 
 export const DeleteChat: FC<IDeleteChat> = ({ chats, setChats }) => {
@@ -20,16 +21,14 @@ export const DeleteChat: FC<IDeleteChat> = ({ chats, setChats }) => {
 	}
 
 	return (
-		<button
-			type="button"
+		<ButtonIcon
+			icon={<BiTrash />}
+			onClick={handleDelete}
+			tooltip="Delete chat"
+			disabled={!chats.length}
 			role="button"
 			aria-label="Delete chat"
-			className="inline-flex items-center h-[32px] disabled:text-gray-500"
-			disabled={!chats.length}
-			onClick={handleDelete}
-		>
-			<BiTrash />
-		</button>
+		/>
 	)
 }
 

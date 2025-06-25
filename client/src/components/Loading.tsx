@@ -1,21 +1,25 @@
 import { TypeAnimation } from "react-type-animation"
 
-export const Loading = () => {
+export const Loading: FC<ILoading> = ({ string = "Thinking" }) => {
 	return (
 		<TypeAnimation
 			sequence={[
-				// Same substring at the start will only be typed out once, initially
-				"Thinking.",
+				`${string}.`,
 				500,
-				"Thinking..",
+				`${string}..`,
 				500,
-				"Thinking...",
+				`${string}...`,
 				500,
 			]}
 			wrapper="p"
 			speed={50}
 			repeat={Infinity}
 			cursor={false}
+			preRenderFirstString
 		/>
 	)
+}
+
+interface ILoading {
+	string?: string
 }

@@ -30,7 +30,11 @@ export const Messaging: FC<IMessaging> = ({
 			<div className="flex flex-col gap-4 w-full overflow-y-scroll grow">
 				{!chat.length && (
 					<div className="flex justify-center items-center w-full h-full">
-						<p>No message yet.</p>
+						{isLoading ? (
+							<Loading string="Getting chats" />
+						) : (
+							<p>Write your first message!</p>
+						)}
 					</div>
 				)}
 
@@ -38,7 +42,9 @@ export const Messaging: FC<IMessaging> = ({
 					<Message message={message} key={message._id} />
 				))}
 
-				{isLoading && <Loading />}
+				{isLoading && chat.length ? (
+					<Loading string="Thinking" />
+				) : null}
 
 				<div ref={messagesEndRef} />
 			</div>

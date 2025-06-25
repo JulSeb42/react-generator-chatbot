@@ -2,6 +2,7 @@ import { useState, useRef, type KeyboardEvent } from "react"
 import { BiSend } from "react-icons/bi"
 import { toast } from "react-toastify"
 import { chatService } from "api"
+import { ButtonIcon } from "components/ButtonIcon"
 import { DeleteChat } from "./DeleteChat"
 import type { Chat } from "types"
 
@@ -80,13 +81,20 @@ export const Input: FC<IInput> = ({
 				autoFocus
 			/>
 
-			<button
+			<ButtonIcon
+				icon={<BiSend />}
+				type="submit"
+				disabled={isLoading || !message.length}
+				tooltip="Send"
+			/>
+
+			{/* <button
 				type="submit"
 				disabled={isLoading || !message.length}
 				className="inline-flex items-center h-[32px] disabled:text-gray-500"
 			>
 				<BiSend />
-			</button>
+			</button> */}
 
 			<DeleteChat chats={chats} setChats={setChats} />
 		</form>
