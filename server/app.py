@@ -22,7 +22,6 @@ CORS(app, resources={r"auth/*": {"origins": "*"}})
 CORS(app, resources={r"contact/*": {"origins": "*"}})
 
 openai.api_key = OPENAI_API_KEY
-pc = Pinecone(api_key=PINECONE_API_KEY)
 
 
 @app.route(f"{base_api_url}/", methods=["GET"])

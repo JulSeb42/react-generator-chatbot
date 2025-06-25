@@ -106,23 +106,6 @@ def chat():
         return jsonify({"error": str(e)}), 500
 
 
-# @chat_bp.route(f"{base_api_url}/new-message/<session_id>")
-# def new_message(session_id):
-#     data = request.json()
-#     user_input = data.get("message")
-#     session_id = data.get("session_id")
-
-#     if not user_input:
-#         return jsonify({"error": "No message provided"}), 400
-
-#     return
-
-
-# @chat_bp.route(f"{base_api_url}/new-message/<session_id>")
-# def new_message(session_id):
-#     return
-
-
 @chat_bp.route(f"{base_api_url}/messages/<session_id>", methods=["GET"])
 def get_session_messages(session_id):
     res = messages_col.find({"session_id": str(session_id)})
@@ -130,30 +113,6 @@ def get_session_messages(session_id):
     for message in messages:
         message["_id"] = str(message["_id"])
     return jsonify(messages), 201
-
-
-# @chat_bp.route(f"{base_api_url}/messages/<session_id>", methods=["GET"])
-# def get_session_messages(session_id):
-#     from utils.connect_db import get_db_connection
-
-#     with get_db_connection() as conn:
-#         cursor = conn.execute(
-#             "SELECT id, session_id, role, message, created_at FROM messages WHERE session_id = ? ORDER BY created_at",
-#             (session_id,),
-#         )
-#         messages = []
-#         for row in cursor.fetchall():
-#             messages.append(
-#                 {
-#                     "id": row["id"],
-#                     "session_id": row["session_id"],
-#                     "role": row["role"],
-#                     "message": row["message"],
-#                     "created_at": row["created_at"],
-#                 }
-#             )
-
-#     return jsonify(messages), 200
 
 
 @chat_bp.route(f"{base_api_url}/delete-session/<session_id>", methods=["DELETE"])
