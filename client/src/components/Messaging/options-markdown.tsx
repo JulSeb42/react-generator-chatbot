@@ -22,9 +22,7 @@ const Link = (props: HTMLAnchorElement) => {
 export const optionsMarkdown: MarkdownToJSX.Options = {
 	wrapper: Flex,
 	overrides: {
-		pre: {
-			component: CodeBlock,
-		},
+		pre: { component: CodeBlock },
 		a: { component: Link },
 	},
 }

@@ -1,9 +1,10 @@
 import { useState, useRef, type KeyboardEvent } from "react"
-import { BiSend } from "react-icons/bi"
+import { BiSend, BiTrash } from "react-icons/bi"
 import { toast } from "react-toastify"
 import { chatService } from "api"
 import { ButtonIcon } from "components/ButtonIcon"
-import { DeleteChat } from "./DeleteChat"
+import { Alert } from "components/Alert"
+import { Button } from "components/Button"
 import type { Chat } from "types"
 
 export const Input: FC<IInput> = ({
@@ -13,6 +14,7 @@ export const Input: FC<IInput> = ({
 	setIsLoading,
 }) => {
 	const formRef = useRef<HTMLFormElement>(null)
+	const [isDeleteOpen, setIsDeleteOpen] = useState(false)
 
 	const [message, setMessage] = useState("")
 	const sessionId = localStorage.getItem("session_id")
@@ -65,39 +67,80 @@ export const Input: FC<IInput> = ({
 			.finally(() => setIsLoading(false))
 	}
 
+	const handleDelete = () => {
+		chatService
+			.deleteSession(sessionId!)
+			.then(() => {
+				toast.success("Your chat has been deleted")
+				setChats([])
+			})
+			.catch(err => {
+				console.log(err)
+				toast.error("An error occurred, check console")
+			})
+			.finally(() => setIsDeleteOpen(false))
+	}
+
 	return (
-		<form
-			onSubmit={handleSubmit}
-			className="flex items-end gap-2 w-full"
-			ref={formRef}
-		>
-			<textarea
-				className="flex backdrop-bg px-4 border-1 border-white border-solid rounded-lg outline-0 w-full min-h-[32px] field-sizing-content resize-none disabled:cursor-not-allowed"
-				value={message}
-				onChange={e => setMessage(e.target.value)}
-				onKeyDown={handleKeyDown}
-				rows={1}
-				placeholder="Type your message here..."
-				autoFocus
-			/>
+		<>
+			{isDeleteOpen && (
+				<Alert>
+					<p>Are you sure you want to delete your chat?</p>
 
-			<ButtonIcon
-				icon={<BiSend />}
-				type="submit"
-				disabled={isLoading || !message.length}
-				tooltip="Send"
-			/>
+					<div className="flex gap-2">
+						<Button
+							type="button"
+							color="danger"
+							onClick={handleDelete}
+						>
+							Yes, delete the chat
+						</Button>
 
-			{/* <button
-				type="submit"
-				disabled={isLoading || !message.length}
-				className="inline-flex items-center h-[32px] disabled:text-gray-500"
+						<Button
+							type="button"
+							variant="secondary"
+							color="danger"
+							onClick={() => setIsDeleteOpen(false)}
+						>
+							No, cancel
+						</Button>
+					</div>
+				</Alert>
+			)}
+
+			<form
+				onSubmit={handleSubmit}
+				className="flex items-end gap-2 w-full"
+				ref={formRef}
 			>
-				<BiSend />
-			</button> */}
+				<textarea
+					className="flex backdrop-bg px-4 border-1 border-white border-solid rounded-lg outline-0 w-full min-h-[32px] field-sizing-content resize-none disabled:cursor-not-allowed"
+					value={message}
+					onChange={e => setMessage(e.target.value)}
+					onKeyDown={handleKeyDown}
+					rows={1}
+					placeholder="Type your message here..."
+					autoFocus
+				/>
 
-			<DeleteChat chats={chats} setChats={setChats} />
-		</form>
+				<ButtonIcon
+					icon={<BiSend />}
+					type="submit"
+					disabled={isLoading || !message.length}
+					tooltip="Send"
+				/>
+
+				<ButtonIcon
+					icon={<BiTrash />}
+					onClick={() => setIsDeleteOpen(true)}
+					tooltip="Delete chat"
+					disabled={!chats.length}
+					role="button"
+					aria-label="Delete chat"
+					type="button"
+				/>
+			</form>
+		</>
 	)
 }
 
