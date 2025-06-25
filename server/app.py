@@ -9,7 +9,7 @@ from pinecone import Pinecone
 from routes.chat import chat_bp
 from routes.populate_from_hf import populate_bp
 from utils.connect_db import base_api_url
-from utils.consts import OPENAI_API_KEY, PINECONE_API_KEY, TOKEN_SECRET, CLIENT_URI
+from utils.consts import OPENAI_API_KEY, TOKEN_SECRET, CLIENT_URI
 
 app = Flask(__name__)
 app.secret_key = TOKEN_SECRET
@@ -17,9 +17,7 @@ CORS(app)
 CORS(app, origins=[CLIENT_URI])
 CORS(app, resources={r"/*": {"origins": "*"}})
 CORS(app, resources={r"/api/*": {"origins": CLIENT_URI}})
-CORS(app, resources={r"/projects/*": {"origins": "*"}})
-CORS(app, resources={r"auth/*": {"origins": "*"}})
-CORS(app, resources={r"contact/*": {"origins": "*"}})
+CORS(app, resources={r"/chat/*": {"origins": CLIENT_URI}})
 
 openai.api_key = OPENAI_API_KEY
 
