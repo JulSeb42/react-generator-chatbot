@@ -1,11 +1,10 @@
 import Markdown from "markdown-to-jsx"
+import { capitalize, formatDate } from "@julseb-lib/utils"
 import { clsx } from "utils"
 import { optionsMarkdown } from "./options-markdown"
 import type { Chat } from "types"
 
 export const Message: FC<IMessage> = ({ message }) => {
-	console.log("Rendering message:", message)
-
 	return (
 		<div
 			className={clsx(
@@ -15,8 +14,11 @@ export const Message: FC<IMessage> = ({ message }) => {
 		>
 			<div className="flex flex-col gap-1">
 				<div className="opacity-50 text-xs">
-					{message.role} • {message._id} •{" "}
-					{new Date(message.created_at).toLocaleTimeString()}
+					{capitalize(message.role)} •{" "}
+					{formatDate(new Date(message.created_at)) ===
+					formatDate(new Date())
+						? "Today"
+						: formatDate(new Date(message.created_at))}
 				</div>
 
 				<Markdown

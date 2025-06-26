@@ -39,8 +39,6 @@ export const Input: FC<IInput> = ({
 			const formData = new FormData()
 			formData.append("image", file, file.name)
 
-			console.log("=== UPLOADING TO CLOUDINARY ===")
-
 			const response = await axios.post(
 				"http://localhost:8000/api/chat/upload-image",
 				formData,
@@ -51,7 +49,6 @@ export const Input: FC<IInput> = ({
 				},
 			)
 
-			console.log("✅ Cloudinary upload success:", response.data)
 			return response.data.image_url
 		} catch (error) {
 			console.error("❌ Cloudinary upload failed:", error)
@@ -68,13 +65,6 @@ export const Input: FC<IInput> = ({
 		const file = e.target.files?.[0]
 
 		if (!file) return
-
-		console.log("=== FILE SELECTION ===")
-		console.log("Selected file:", {
-			name: file.name,
-			size: file.size,
-			type: file.type,
-		})
 
 		// Validate file type
 		if (!file.type.startsWith("image/")) {
@@ -145,26 +135,15 @@ export const Input: FC<IInput> = ({
 			image_url: currentCloudinaryUrl ?? undefined,
 		}
 
-		console.log("=== ADDING USER MESSAGE TO UI ===", userMessage)
 		setChats(prevChats => [...prevChats, userMessage])
 
 		try {
-			console.log("=== SENDING REQUEST TO BACKEND ===")
-			console.log("Request data:", {
-				message:
-					currentMessage || "Generate React code for this UI mockup",
-				session_id: currentSessionId ?? "",
-				image_url: currentCloudinaryUrl,
-			})
-
 			const response = await chatService.newChat({
 				message:
 					currentMessage || "Generate React code for this UI mockup",
 				session_id: currentSessionId ?? "",
 				image_url: currentCloudinaryUrl,
 			})
-
-			console.log("✅ Backend response:", response.data)
 
 			// Update session if new one was created
 			if (!currentSessionId && response?.data?.session_id) {
@@ -186,10 +165,6 @@ export const Input: FC<IInput> = ({
 						response.data.created_at || new Date().toString(),
 				}
 
-				console.log(
-					"=== ADDING ASSISTANT MESSAGE TO UI ===",
-					assistantMessage,
-				)
 				setChats(prevChats => [...prevChats, assistantMessage])
 			} else {
 				console.error("Invalid response format:", response.data)

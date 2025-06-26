@@ -9,12 +9,6 @@ from utils.consts import (
     CLOUDINARY_API_SECRET,
 )
 
-# Debug: Print credentials (hide sensitive parts)
-print(f"Cloudinary config check:")
-print(f"  Cloud Name: {CLOUDINARY_CLOUD_NAME}")
-print(f"  API Key: {CLOUDINARY_API_KEY[:10] if CLOUDINARY_API_KEY else 'None'}...")
-print(f"  API Secret: {'Set' if CLOUDINARY_API_SECRET else 'Missing'}")
-
 # Configure Cloudinary
 try:
     cloudinary.config(
@@ -45,14 +39,6 @@ class CloudinaryService:
             dict: Upload result with success status, URL, and metadata
         """
         try:
-            print(f"=== CLOUDINARY UPLOAD START ===")
-            print(f"Filename: {filename}")
-            print(f"Folder: {folder}")
-            print(f"File data type: {type(file_data)}")
-
-            if hasattr(file_data, "__len__"):
-                print(f"File data size: {len(file_data)} bytes")
-
             # Check if file_data is empty
             if not file_data:
                 return {"success": False, "error": "File data is empty"}
@@ -64,10 +50,8 @@ class CloudinaryService:
                 filename.replace(" ", "_").replace(".", "_") if filename else "image"
             )
             public_id = f"{clean_filename}_{timestamp}_{unique_id}"
-            print(f"Generated public_id: {public_id}")
 
             # Upload image to Cloudinary
-            print("Calling cloudinary.uploader.upload...")
             result = cloudinary.uploader.upload(
                 file_data,
                 folder=folder,
@@ -82,12 +66,6 @@ class CloudinaryService:
                 unique_filename=True,
             )
 
-            print(f"=== CLOUDINARY UPLOAD SUCCESS ===")
-            print(f"Secure URL: {result.get('secure_url')}")
-            print(f"Public ID: {result.get('public_id')}")
-            print(f"Format: {result.get('format')}")
-            print(f"Bytes: {result.get('bytes')}")
-
             return {
                 "success": True,
                 "url": result.get("secure_url"),
@@ -101,9 +79,6 @@ class CloudinaryService:
             }
 
         except Exception as e:
-            print(f"=== CLOUDINARY UPLOAD ERROR ===")
-            print(f"Error: {str(e)}")
-            print(f"Error type: {type(e)}")
             import traceback
 
             traceback.print_exc()
@@ -121,16 +96,10 @@ class CloudinaryService:
             dict: Deletion result
         """
         try:
-            print(f"=== CLOUDINARY DELETE ===")
-            print(f"Deleting public_id: {public_id}")
-
             result = cloudinary.uploader.destroy(public_id)
-            print(f"Delete result: {result}")
             return result
 
         except Exception as e:
-            print(f"=== CLOUDINARY DELETE ERROR ===")
-            print(f"Error: {str(e)}")
             return {"error": str(e)}
 
     @staticmethod

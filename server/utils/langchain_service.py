@@ -37,8 +37,6 @@ class CustomPineconeRetriever:
 
 class ReactCodeAssistant:
     def __init__(self):
-        print("Initializing ReactCodeAssistant...")
-
         # Initialize LLMs with timeouts (FIXED - removed duplicate)
         self.llm = ChatOpenAI(
             model="gpt-4o",
@@ -57,13 +55,10 @@ class ReactCodeAssistant:
             max_retries=1,
         )
 
-        print("✅ LLMs initialized")
-
         # Initialize Pinecone
         try:
             pc = Pinecone(api_key=PINECONE_API_KEY)
             self.index = pc.Index("ironhack-final-project")
-            print("✅ Pinecone initialized")
         except Exception as e:
             print(f"❌ Pinecone error: {e}")
             self.index = None
@@ -104,16 +99,10 @@ User request: {question}"""
     def generate_code(self, user_input: str, image_description: str = None) -> str:
         """Generate React code based on user input and optional image description"""
         try:
-            print("=== CODE GENERATION START ===")
-            print(f"User input length: {len(user_input)} chars")
-
-            # Combine user input with image description if provided
             if image_description:
                 combined_input = f"{user_input}\n\nUI Analysis: {image_description}"
             else:
                 combined_input = user_input
-
-            print(f"Combined input length: {len(combined_input)} chars")
 
             # Get relevant documents from Pinecone (with fallback)
             context = ""
@@ -134,25 +123,19 @@ User request: {question}"""
             prompt = self.prompt_template.format(
                 context=context, question=combined_input
             )
-            print(f"Final prompt length: {len(prompt)} chars")
 
             # Generate response
-            print("Calling OpenAI API for code generation...")
             response = self.llm.invoke([HumanMessage(content=prompt)])
-            print(f"✅ Code generation complete: {len(response.content)} chars")
 
             return response.content
 
         except Exception as e:
-            print(f"❌ Code generation error: {str(e)}")
             return f"I apologize, but I encountered an error generating the code: {str(e)}. Please try with a simpler request."
 
     @traceable(run_type="llm", name="image_analysis")
     def analyze_image(self, base64_image: str) -> str:
         """Analyze UI mockup image and return description"""
         try:
-            print("=== VISION API CALL START ===")
-
             message = HumanMessage(
                 content=[
                     {
@@ -165,10 +148,8 @@ User request: {question}"""
                     },
                 ]
             )
-
-            print("Invoking vision model...")
+            
             response = self.vision_llm.invoke([message])
-            print(f"✅ Vision response received: {len(response.content)} chars")
 
             return response.content
 
@@ -186,5 +167,4 @@ User request: {question}"""
 
 
 # Create global instance
-print("Creating ReactCodeAssistant instance...")
 react_assistant = ReactCodeAssistant()

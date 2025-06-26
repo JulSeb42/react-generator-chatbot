@@ -14,15 +14,11 @@ class ChatService {
 		session_id?: string | null
 		image_url?: string | null
 	}): Promise<ApiResponse<Chat>> {
-		console.log("=== CHAT SERVICE - SENDING JSON ===")
-		console.log("Data:", data)
-
 		try {
 			const response = await http.post(PATHS.NEW_CHAT, data, {
 				headers: { "Content-Type": "application/json" },
 			})
 
-			console.log("✅ Chat service response:", response.data)
 			return response
 		} catch (error) {
 			console.error("❌ Chat service error:", error)
