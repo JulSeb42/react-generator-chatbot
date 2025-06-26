@@ -76,7 +76,7 @@ def monitoring_info():
 app.register_blueprint(chat_bp)
 app.register_blueprint(populate_bp)
 
-# In your app.py
+# Run the app on port 8000
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)
