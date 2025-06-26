@@ -3,8 +3,7 @@ import { BiSend, BiTrash } from "react-icons/bi"
 import { toast } from "react-toastify"
 import { chatService } from "api"
 import { ButtonIcon } from "components/ButtonIcon"
-import { Alert } from "components/Alert"
-import { Button } from "components/Button"
+import { DeleteChat } from "./DeleteChat"
 import type { Chat } from "types"
 
 export const Input: FC<IInput> = ({
@@ -67,46 +66,13 @@ export const Input: FC<IInput> = ({
 			.finally(() => setIsLoading(false))
 	}
 
-	const handleDelete = () => {
-		chatService
-			.deleteSession(sessionId!)
-			.then(() => {
-				toast.success("Your chat has been deleted")
-				setChats([])
-			})
-			.catch(err => {
-				console.log(err)
-				toast.error("An error occurred, check console")
-			})
-			.finally(() => setIsDeleteOpen(false))
-	}
-
 	return (
 		<>
-			{isDeleteOpen && (
-				<Alert>
-					<p>Are you sure you want to delete your chat?</p>
-
-					<div className="flex gap-2">
-						<Button
-							type="button"
-							color="danger"
-							onClick={handleDelete}
-						>
-							Yes, delete the chat
-						</Button>
-
-						<Button
-							type="button"
-							variant="secondary"
-							color="danger"
-							onClick={() => setIsDeleteOpen(false)}
-						>
-							No, cancel
-						</Button>
-					</div>
-				</Alert>
-			)}
+			<DeleteChat
+				isOpen={isDeleteOpen}
+				setIsOpen={setIsDeleteOpen}
+				setChats={setChats}
+			/>
 
 			<form
 				onSubmit={handleSubmit}
