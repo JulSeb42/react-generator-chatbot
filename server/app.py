@@ -2,10 +2,10 @@
 Import routes + init Flask
 """
 
+import os
 from flask import Flask
 from flask_cors import CORS
 import openai
-import os
 from langsmith import Client
 from routes.chat import chat_bp
 from routes.populate_from_hf import populate_bp
