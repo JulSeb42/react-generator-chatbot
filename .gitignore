@@ -3,3 +3,4 @@
 __pycache__
 node_modules
 README.local.md
+.DS_Store
