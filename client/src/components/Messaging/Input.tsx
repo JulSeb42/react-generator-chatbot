@@ -3,6 +3,7 @@ import { BiImage, BiSend, BiTrash, BiX } from "react-icons/bi"
 import axios from "axios"
 import { toast } from "react-toastify"
 import { chatService } from "api"
+import { clsx } from "utils"
 import { ButtonIcon } from "components/ButtonIcon"
 import { DeleteChat } from "./DeleteChat"
 import type { Chat } from "types"
@@ -24,12 +25,27 @@ export const Input: FC<IInput> = ({
 	const [imagePreview, setImagePreview] = useState<string | null>(null)
 	const [cloudinaryUrl, setCloudinaryUrl] = useState<string | null>(null)
 	const [isUploading, setIsUploading] = useState(false)
+	const [isDragOver, setIsDragOver] = useState(false)
 
 	const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault()
 			if (message.length || selectedImage) handleSubmit(e as any) // Submit the form
 		}
+	}
+
+	const validateFile = (file: File): boolean => {
+		if (!file.type.startsWith("image/")) {
+			toast.error("Please select an image file")
+			return false
+		}
+
+		if (file.size > 5 * 1024 * 1024) {
+			toast.error("Image size should be less than 5MB")
+			return false
+		}
+
+		return true
 	}
 
 	const uploadToCloudinary = async (file: File): Promise<string | null> => {
@@ -56,6 +72,27 @@ export const Input: FC<IInput> = ({
 			return null
 		} finally {
 			setIsUploading(false)
+		}
+	}
+
+	const processFile = async (file: File) => {
+		if (!validateFile(file)) return
+
+		// Set the selected file and create preview
+		setSelectedImage(file)
+
+		// Create local preview
+		const reader = new FileReader()
+		reader.onload = e => {
+			const result = e.target?.result as string
+			setImagePreview(result)
+		}
+		reader.readAsDataURL(file)
+
+		// Upload to Cloudinary immediately
+		const cloudinaryUrl = await uploadToCloudinary(file)
+		if (cloudinaryUrl) {
+			setCloudinaryUrl(cloudinaryUrl)
 		}
 	}
 
@@ -94,6 +131,35 @@ export const Input: FC<IInput> = ({
 		if (cloudinaryUrl) {
 			setCloudinaryUrl(cloudinaryUrl)
 			toast.success("Image uploaded successfully!")
+		}
+	}
+
+	const handleDragEnter = (e: React.DragEvent) => {
+		e.preventDefault()
+		e.stopPropagation()
+		setIsDragOver(true)
+	}
+
+	const handleDragLeave = (e: React.DragEvent) => {
+		e.preventDefault()
+		e.stopPropagation()
+		setIsDragOver(false)
+	}
+
+	const handleDragOver = (e: React.DragEvent) => {
+		e.preventDefault()
+		e.stopPropagation()
+	}
+
+	const handleDrop = async (e: React.DragEvent) => {
+		e.preventDefault()
+		e.stopPropagation()
+		setIsDragOver(false)
+
+		const files = e.dataTransfer.files
+		if (files.length > 0) {
+			const file = files[0]
+			await processFile(file)
 		}
 	}
 
@@ -220,60 +286,81 @@ export const Input: FC<IInput> = ({
 				</div>
 			)}
 
-			<form
-				onSubmit={handleSubmit}
-				className="flex items-end gap-2 w-full"
-				ref={formRef}
+			<div
+				className={clsx(
+					"relative py-4 w-full",
+					isDragOver && "ring-2 ring-blue-500 ring-opacity-50",
+				)}
+				onDragEnter={handleDragEnter}
+				onDragLeave={handleDragLeave}
+				onDragOver={handleDragOver}
+				onDrop={handleDrop}
 			>
-				<textarea
-					className="flex backdrop-bg px-4 border-1 border-white border-solid rounded-lg outline-0 w-full min-h-[32px] field-sizing-content resize-none disabled:cursor-not-allowed"
-					value={message}
-					onChange={e => setMessage(e.target.value)}
-					onKeyDown={handleKeyDown}
-					rows={1}
-					placeholder="Type your message here..."
-					autoFocus
-				/>
+				{isDragOver && (
+					<div className="z-10 absolute inset-0 flex justify-center items-center bg-blue-50 bg-opacity-90 border-2 border-blue-300 border-dashed rounded-lg">
+						<div className="text-center">
+							<BiImage className="mx-auto mb-2 text-blue-500 text-4xl" />
+							<p className="font-medium text-blue-600">
+								Drop image here
+							</p>
+						</div>
+					</div>
+				)}
 
-				{/* Hidden file input */}
-				<input
-					type="file"
-					ref={fileInputRef}
-					onChange={handleImageSelect}
-					accept="image/*"
-					style={{ display: "none" }}
-				/>
+				<form
+					onSubmit={handleSubmit}
+					className="flex items-end gap-2 w-full"
+					ref={formRef}
+				>
+					<textarea
+						className="flex backdrop-bg px-4 border-1 border-white border-solid rounded-lg outline-0 w-full min-h-[32px] field-sizing-content resize-none disabled:cursor-not-allowed"
+						value={message}
+						onChange={e => setMessage(e.target.value)}
+						onKeyDown={handleKeyDown}
+						rows={1}
+						placeholder="Type your message here..."
+						autoFocus
+					/>
 
-				{/* Image upload button */}
-				<ButtonIcon
-					icon={<BiImage />}
-					onClick={() => fileInputRef.current?.click()}
-					tooltip="Upload image"
-					disabled={isLoading || isUploading}
-					type="button"
-				/>
+					{/* Hidden file input */}
+					<input
+						type="file"
+						ref={fileInputRef}
+						onChange={handleImageSelect}
+						accept="image/*"
+						style={{ display: "none" }}
+					/>
 
-				<ButtonIcon
-					icon={<BiSend />}
-					type="submit"
-					disabled={
-						isLoading ||
-						isUploading ||
-						(!message.length && !cloudinaryUrl)
-					} // Fix this condition
-					tooltip="Send"
-				/>
+					<ButtonIcon
+						icon={<BiImage />}
+						onClick={() => fileInputRef.current?.click()}
+						tooltip="Upload image"
+						disabled={isLoading || isUploading}
+						type="button"
+					/>
 
-				<ButtonIcon
-					icon={<BiTrash />}
-					onClick={() => setIsDeleteOpen(true)}
-					tooltip="Delete chat"
-					disabled={!chats.length}
-					role="button"
-					aria-label="Delete chat"
-					type="button"
-				/>
-			</form>
+					<ButtonIcon
+						icon={<BiSend />}
+						type="submit"
+						disabled={
+							isLoading ||
+							isUploading ||
+							(!message.length && !cloudinaryUrl)
+						}
+						tooltip="Send"
+					/>
+
+					<ButtonIcon
+						icon={<BiTrash />}
+						onClick={() => setIsDeleteOpen(true)}
+						tooltip="Delete chat"
+						disabled={!chats.length}
+						role="button"
+						aria-label="Delete chat"
+						type="button"
+					/>
+				</form>
+			</div>
 		</>
 	)
 }
