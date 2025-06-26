@@ -9,11 +9,25 @@ class ChatService {
 		return http.get("/chat/chats")
 	}
 
-	newChat(data: {
-		message: string
+	async newChat(data: {
+		message?: string
 		session_id?: string | null
-	}): ApiResponse<Chat> {
-		return http.post(PATHS.NEW_CHAT, data)
+		image_url?: string | null
+	}): Promise<ApiResponse<Chat>> {
+		console.log("=== CHAT SERVICE - SENDING JSON ===")
+		console.log("Data:", data)
+
+		try {
+			const response = await http.post(PATHS.NEW_CHAT, data, {
+				headers: { "Content-Type": "application/json" },
+			})
+
+			console.log("✅ Chat service response:", response.data)
+			return response
+		} catch (error) {
+			console.error("❌ Chat service error:", error)
+			throw error
+		}
 	}
 
 	newMessage(session_id: string, message: string): ApiResponse<Array<Chat>> {

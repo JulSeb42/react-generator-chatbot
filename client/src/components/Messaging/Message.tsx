@@ -4,6 +4,8 @@ import { optionsMarkdown } from "./options-markdown"
 import type { Chat } from "types"
 
 export const Message: FC<IMessage> = ({ message }) => {
+	console.log("Rendering message:", message)
+
 	return (
 		<div
 			className={clsx(
@@ -11,16 +13,25 @@ export const Message: FC<IMessage> = ({ message }) => {
 				message.role === "user" ? "self-end" : "self-start",
 			)}
 		>
-			<Markdown
-				className={clsx(
-					"max-w-full message",
-					"[&>*]:max-w-full [&>*>*]:max-w-full",
-					"[&>a]:underline",
-				)}
-				options={optionsMarkdown}
-			>
-				{message.message}
-			</Markdown>
+			<div className="flex flex-col gap-1">
+				<div className="opacity-50 text-xs">
+					{message.role} • {message._id} •{" "}
+					{new Date(message.created_at).toLocaleTimeString()}
+				</div>
+
+				<Markdown
+					className={clsx(
+						"max-w-full message",
+						"[&>*]:max-w-full [&>*>*]:max-w-full",
+						"[&>a]:underline",
+					)}
+					options={optionsMarkdown}
+				>
+					{message.message}
+				</Markdown>
+
+				{message.image_url && <img src={message.image_url} />}
+			</div>
 		</div>
 	)
 }
