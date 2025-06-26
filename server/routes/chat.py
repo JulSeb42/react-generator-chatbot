@@ -151,7 +151,8 @@ def chat():
                 );
             };
             
-            export default Button;"""
+            export default Button;
+            ```"""
 
         # Step 9: Save assistant response
         try:
