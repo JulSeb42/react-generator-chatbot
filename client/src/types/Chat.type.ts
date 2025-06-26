@@ -6,4 +6,6 @@ export type Chat = {
 	session_id: string | null
 	message: string
 	created_at: string
+	has_image?: boolean
+	image_url?: string
 }

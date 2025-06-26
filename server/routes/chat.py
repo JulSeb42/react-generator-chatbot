@@ -7,6 +7,7 @@ import base64
 from utils.connect_db import base_api_url, messages_col, snippets_col
 from utils.pc_index import index
 from utils.langchain_service import react_assistant
+from utils.cloudinary_service import cloudinary_service
 
 chat_bp = Blueprint("chat", __name__)
 base_api_url = f"{base_api_url}/chat"
@@ -25,55 +26,43 @@ def test_chat_route():
 def chat():
     try:
         print(f"=== NEW CHAT REQUEST ===")
-        print(f"Request content type: {request.content_type}")
 
-        # Handle both JSON and FormData
-        if request.content_type and "multipart/form-data" in request.content_type:
-            user_input = request.form.get("message", "")
-            session_id = request.form.get("session_id")
-            image_file = request.files.get("image")
-            print(
-                f"FormData received - Message: '{user_input}', Image: {image_file is not None}"
-            )
-        else:
-            data = request.get_json()
-            user_input = data.get("message", "") if data else ""
-            session_id = data.get("session_id") if data else None
-            image_file = None
-            print(f"JSON received - Message: '{user_input}'")
+        # Handle JSON requests with image URLs
+        data = request.get_json()
+        user_input = data.get("message", "") if data else ""
+        session_id = data.get("session_id") if data else None
+        image_url = data.get("image_url") if data else None  # Get Cloudinary URL
+
+        print(f"Message: '{user_input}'")
+        print(f"Image URL: {image_url}")
 
         if not session_id:
             session_id = str(uuid.uuid4())
 
-        if not user_input and not image_file:
+        if not user_input and not image_url:
             return jsonify({"error": "No message or image provided"}), 400
 
-        # Process image if provided using LangChain
+        # If image URL is provided, analyze it
         image_description = ""
-        if image_file:
-            print(f"Processing image: {image_file.filename}")
+        if image_url:
             try:
-                # Read and encode image
-                image_data = image_file.read()
-                base64_image = base64.b64encode(image_data).decode("utf-8")
-                print(
-                    f"Image encoded successfully, size: {len(base64_image)} characters"
-                )
+                print("=== ANALYZING IMAGE FROM URL ===")
+                # Download image from Cloudinary URL for analysis
+                import requests
 
-                # Use LangChain for image analysis
-                print("Calling LangChain Vision analysis...")
+                response = requests.get(image_url)
+                image_data = response.content
+
+                # Encode for Vision API
+                base64_image = base64.b64encode(image_data).decode("utf-8")
                 image_description = react_assistant.analyze_image(base64_image)
-                print(
-                    f"LangChain Vision SUCCESS! Response length: {len(image_description)} characters"
-                )
+                print(f"Vision analysis complete: {len(image_description)} chars")
 
             except Exception as e:
-                print(f"Vision analysis error: {str(e)}")
-                image_description = (
-                    f"Error analyzing image: {str(e)}. Please describe the UI manually."
-                )
+                print(f"Image analysis error: {str(e)}")
+                image_description = "Could not analyze image"
 
-        # Combine user input with image description
+        # Combine input with image description
         if image_description:
             combined_input = (
                 f"{user_input}\n\nUI Analysis: {image_description}"
@@ -83,46 +72,43 @@ def chat():
         else:
             combined_input = user_input
 
-        print(f"Final combined input: {combined_input[:300]}...")
-
         # Save user message to database
-        messages_col.insert_one(
-            {
-                "session_id": session_id,
-                "role": "user",
-                "message": combined_input,
-                "has_image": bool(image_file),
-                "created_at": datetime.datetime.now(),
-            }
-        )
+        user_message_data = {
+            "session_id": session_id,
+            "role": "user",
+            "message": combined_input,
+            "has_image": bool(image_url),
+            "image_url": image_url,
+            "created_at": datetime.datetime.now(),
+        }
+        messages_col.insert_one(user_message_data)
 
-        # Generate response using LangChain RAG chain
-        print("Generating response with LangChain...")
+        # Generate response
         reply = react_assistant.generate_code(
-            user_input=user_input if not image_description else combined_input,
+            user_input=combined_input,
             image_description=image_description if image_description else None,
         )
 
-        print(f"LangChain response generated, length: {len(reply)} characters")
+        # Save assistant response
+        assistant_message_data = {
+            "session_id": session_id,
+            "role": "assistant",
+            "message": reply,
+            "created_at": datetime.datetime.now(),
+        }
 
-        # Save assistant reply to database
-        result = messages_col.insert_one(
-            {
-                "session_id": session_id,
-                "role": "assistant",
-                "message": reply,
-                "created_at": datetime.datetime.now(),
-            }
-        )
+        if image_url:
+            assistant_message_data["references_image"] = image_url
 
-        # Return the response
+        result = messages_col.insert_one(assistant_message_data)
+
         return (
             jsonify(
                 {
                     "_id": str(result.inserted_id),
                     "session_id": session_id,
-                    "role": "assistant",
-                    "message": reply,
+                    "role": "assistant",  # Make sure this is explicitly set
+                    "message": reply,  # Make sure this contains only the assistant's response
                     "created_at": datetime.datetime.now().isoformat(),
                 }
             ),
@@ -131,9 +117,6 @@ def chat():
 
     except Exception as e:
         print(f"Chat error: {str(e)}")
-        import traceback
-
-        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
@@ -178,26 +161,50 @@ def add_snippet():
     return jsonify({"status": "added"})
 
 
-# @chat_bp.route(f"{base_api_url}/add-snippet", methods=["POST"])
-# def add_snippet():
-#     data = request.get_json()
-#     text = data["text"]
-#     tags = data.get("tags", [])
+@chat_bp.route(f"{base_api_url}/upload-image", methods=["POST"])
+def upload_image():
+    """Upload image to Cloudinary immediately"""
+    try:
+        print("=== IMAGE UPLOAD ENDPOINT ===")
 
-#     from utils.connect_db import get_db_connection
+        if "image" not in request.files:
+            return jsonify({"error": "No image file provided"}), 400
 
-#     # Store in SQLite DB
-#     with get_db_connection() as conn:
-#         cursor = conn.execute(
-#             "INSERT INTO snippets (content, tags) VALUES (?, ?)", (text, ",".join(tags))
-#         )
-#         conn.commit()
-#         snippet_id = cursor.lastrowid
+        image_file = request.files["image"]
+        print(f"Uploading image: {image_file.filename}")
 
-#     # Generate and upload to Pinecone
-#     embedding = openai.Embedding.create(input=text, model="text-embedding-ada-002")[
-#         "data"
-#     ][0]["embedding"]
-#     index.upsert([(str(snippet_id), embedding, {"text": text, "tags": ",".join(tags)})])
+        # Read image data
+        image_file.seek(0)
+        image_data = image_file.read()
 
-#     return jsonify({"status": "added", "id": snippet_id})
+        if len(image_data) == 0:
+            return jsonify({"error": "Image file is empty"}), 400
+
+        # Upload to Cloudinary
+        cloudinary_result = cloudinary_service.upload_image(
+            file_data=image_data,
+            filename=image_file.filename or "ui_mockup",
+            folder="final-project-ironhack",
+        )
+
+        if cloudinary_result["success"]:
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "image_url": cloudinary_result["url"],
+                        "public_id": cloudinary_result["public_id"],
+                        "filename": image_file.filename,
+                    }
+                ),
+                200,
+            )
+        else:
+            return (
+                jsonify({"error": f"Upload failed: {cloudinary_result.get('error')}"}),
+                500,
+            )
+
+    except Exception as e:
+        print(f"Upload error: {str(e)}")
+        return jsonify({"error": str(e)}), 500

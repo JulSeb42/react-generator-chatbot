@@ -11,16 +11,20 @@ export const Message: FC<IMessage> = ({ message }) => {
 				message.role === "user" ? "self-end" : "self-start",
 			)}
 		>
-			<Markdown
-				className={clsx(
-					"max-w-full message",
-					"[&>*]:max-w-full [&>*>*]:max-w-full",
-					"[&>a]:underline",
-				)}
-				options={optionsMarkdown}
-			>
-				{message.message}
-			</Markdown>
+			<div className="flex flex-col gap-1">
+				<Markdown
+					className={clsx(
+						"max-w-full message",
+						"[&>*]:max-w-full [&>*>*]:max-w-full",
+						"[&>a]:underline",
+					)}
+					options={optionsMarkdown}
+				>
+					{message.message}
+				</Markdown>
+
+				{message.image_url && <img src={message.image_url} />}
+			</div>
 		</div>
 	)
 }
