@@ -9,14 +9,14 @@ const App = () => {
 	const [chat, setChat] = useState<Array<ChatType>>([])
 	const [isLoading, setIsLoading] = useState(false)
 
-	const sessionId = localStorage.getItem("session_id")
+	const session_id = localStorage.getItem("session_id")
 
 	useEffect(() => {
-		if (sessionId) {
+		if (session_id) {
 			setIsLoading(true)
 			setTimeout(() => {
 				chatService
-					.sessionMessages(sessionId)
+					.sessionMessages(session_id)
 					.then(res => setChat(res.data))
 					.catch(err => {
 						toast.error("An error occurred, check console")
@@ -25,7 +25,7 @@ const App = () => {
 					.finally(() => setIsLoading(false))
 			}, 2000)
 		}
-	}, [sessionId])
+	}, [session_id])
 
 	return (
 		<Page title="Chat">

@@ -12,11 +12,12 @@ export const Input: FC<IInput> = ({
 	isLoading,
 	setIsLoading,
 }) => {
+	const session_id = localStorage.getItem("session_id")
+
 	const formRef = useRef<HTMLFormElement>(null)
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false)
 
 	const [message, setMessage] = useState("")
-	const sessionId = localStorage.getItem("session_id")
 
 	const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === "Enter" && !e.shiftKey) {
@@ -34,7 +35,7 @@ export const Input: FC<IInput> = ({
 			...chats,
 			{
 				message,
-				session_id: sessionId ?? null,
+				session_id: session_id ?? null,
 				_id: "",
 				role: "user",
 				created_at: new Date().toString(),
@@ -43,15 +44,15 @@ export const Input: FC<IInput> = ({
 		setMessage("")
 
 		chatService
-			.newChat({ message, session_id: sessionId })
+			.newChat({ message, session_id: session_id })
 			.then(res => {
-				if (!sessionId)
+				if (!session_id)
 					localStorage.setItem("session_id", res.data.session_id!)
 				setChats([
 					...chats,
 					{
 						message,
-						session_id: sessionId ?? null,
+						session_id: session_id ?? null,
 						_id: "",
 						role: "user",
 						created_at: new Date().toString(),

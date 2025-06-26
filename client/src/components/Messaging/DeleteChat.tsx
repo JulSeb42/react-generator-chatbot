@@ -9,11 +9,11 @@ export const DeleteChat: FC<IDeleteChat> = ({
 	setIsOpen,
 	setChats,
 }) => {
-	const sessionId = localStorage.getItem("session_id")
+	const session_id = localStorage.getItem("session_id")
 
 	const handleDelete = () => {
 		chatService
-			.deleteSession(sessionId!)
+			.deleteSession(session_id!)
 			.then(() => {
 				toast.success("Your chat has been deleted")
 				setChats([])

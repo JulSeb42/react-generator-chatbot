@@ -16,16 +16,16 @@ class ChatService {
 		return http.post(PATHS.NEW_CHAT, data)
 	}
 
-	newMessage(sessionId: string, message: string): ApiResponse<Array<Chat>> {
-		return http.put(PATHS.NEW_MESSAGE(sessionId), message)
+	newMessage(session_id: string, message: string): ApiResponse<Array<Chat>> {
+		return http.put(PATHS.NEW_MESSAGE(session_id), message)
 	}
 
-	sessionMessages(sessionId: string) {
-		return http.get(PATHS.SESSION_MESSAGES(sessionId))
+	sessionMessages(session_id: string) {
+		return http.get(PATHS.SESSION_MESSAGES(session_id))
 	}
 
-	deleteSession(sessionId: string) {
-		return http.delete(PATHS.DELETE_SESSION(sessionId))
+	deleteSession(session_id: string) {
+		return http.delete(PATHS.DELETE_SESSION(session_id))
 	}
 }
 
