@@ -119,6 +119,7 @@ export const Input: FC<IInput> = ({
 	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault()
 
+		// Fix the condition here
 		if (!message.trim() && !cloudinaryUrl) return
 
 		setIsLoading(true)
@@ -144,11 +145,17 @@ export const Input: FC<IInput> = ({
 			image_url: currentCloudinaryUrl ?? undefined,
 		}
 
-		console.log("=== ADDING USER MESSAGE ===", userMessage)
+		console.log("=== ADDING USER MESSAGE TO UI ===", userMessage)
 		setChats(prevChats => [...prevChats, userMessage])
 
 		try {
-			console.log("=== SENDING MESSAGE WITH CLOUDINARY URL ===")
+			console.log("=== SENDING REQUEST TO BACKEND ===")
+			console.log("Request data:", {
+				message:
+					currentMessage || "Generate React code for this UI mockup",
+				session_id: currentSessionId ?? "",
+				image_url: currentCloudinaryUrl,
+			})
 
 			const response = await chatService.newChat({
 				message:
@@ -157,26 +164,36 @@ export const Input: FC<IInput> = ({
 				image_url: currentCloudinaryUrl,
 			})
 
-			console.log("✅ Chat response:", response.data)
+			console.log("✅ Backend response:", response.data)
 
 			// Update session if new one was created
 			if (!currentSessionId && response?.data?.session_id) {
 				localStorage.setItem("session_id", response.data.session_id)
 			}
 
-			// IMPORTANT: Add assistant response as a NEW message, don't modify existing ones
-			if (response?.data) {
+			// Validate the response before adding it
+			if (
+				response?.data &&
+				response.data.role === "assistant" &&
+				response.data.message
+			) {
 				const assistantMessage = {
-					...response.data,
 					_id: response.data._id || `assistant-${Date.now()}`,
+					session_id: response.data.session_id,
 					role: "assistant" as const,
+					message: response.data.message,
+					created_at:
+						response.data.created_at || new Date().toString(),
 				}
 
 				console.log(
-					"=== ADDING ASSISTANT MESSAGE ===",
+					"=== ADDING ASSISTANT MESSAGE TO UI ===",
 					assistantMessage,
 				)
 				setChats(prevChats => [...prevChats, assistantMessage])
+			} else {
+				console.error("Invalid response format:", response.data)
+				throw new Error("Invalid response format from server")
 			}
 		} catch (err: any) {
 			console.error("=== CHAT ERROR ===", err)
@@ -264,7 +281,11 @@ export const Input: FC<IInput> = ({
 				<ButtonIcon
 					icon={<BiSend />}
 					type="submit"
-					disabled={isLoading || (!message.length && !selectedImage)}
+					disabled={
+						isLoading ||
+						isUploading ||
+						(!message.length && !cloudinaryUrl)
+					} // Fix this condition
 					tooltip="Send"
 				/>
 
