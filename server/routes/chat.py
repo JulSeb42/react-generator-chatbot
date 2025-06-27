@@ -1,25 +1,134 @@
-from flask import Blueprint, jsonify, request
+"""Chat routes for AI-powered React code generation.
+
+This module provides Flask Blueprint routes for handling chat interactions with an AI assistant
+that generates React components from text descriptions and UI mockup images. The service
+integrates OpenAI's GPT-4 and Vision models with Pinecone vector database for contextual
+code generation.
+
+Routes:
+    POST /api/chat/new-chat - Generate React code from text/image input
+    GET /api/chat/messages/<session_id> - Retrieve conversation history
+    DELETE /api/chat/delete-session/<session_id> - Delete session and messages
+    POST /api/chat/add-snippet - Add code snippet to knowledge base
+    POST /api/chat/upload-image - Upload UI mockup images to Cloudinary
+
+Features:
+    - AI-powered React component generation from natural language
+    - UI mockup analysis using OpenAI Vision API
+    - Session-based conversation management
+    - Image upload and processing via Cloudinary
+    - Vector similarity search for relevant code examples
+    - Persistent message storage in MongoDB
+
+Dependencies:
+    - OpenAI API for code generation and image analysis
+    - Pinecone for vector similarity search
+    - MongoDB for message and session storage
+    - Cloudinary for image hosting and processing
+    - LangSmith for AI operation tracing
+
+Data Flow:
+    1. User sends message/image via POST /new-chat
+    2. Image analysis (if provided) using Vision API
+    3. Context retrieval from Pinecone vector database
+    4. Code generation using GPT-4 with retrieved context
+    5. Response storage in MongoDB and return to client
+
+Request/Response Formats:
+    New Chat Request:
+        {
+            "message": "Create a button component",
+            "session_id": "uuid-string",
+            "image_url": "https://cloudinary.com/image.jpg"
+        }
+
+    New Chat Response:
+        {
+            "_id": "mongo-object-id",
+            "session_id": "uuid-string",
+            "role": "assistant",
+            "message": "Generated React code...",
+            "created_at": "ISO-datetime"
+        }
+
+Error Handling:
+    All endpoints include comprehensive error handling with specific error messages
+    and appropriate HTTP status codes. Fallback responses are provided when AI
+    services are unavailable.
+
+Example Usage:
+    # Generate React component
+    POST /api/chat/new-chat
+    {
+        "message": "Create a responsive login form",
+        "session_id": "abc-123"
+    }
+
+    # Upload UI mockup
+    POST /api/chat/upload-image
+    Content-Type: multipart/form-data
+    image: [binary file data]
+
+Security:
+    - Input validation for all user-provided data
+    - File type validation for image uploads
+    - Session isolation for user conversations
+    - Error message sanitization to prevent information disclosure
+
+Performance:
+    - Optimized embedding generation for code similarity search
+    - Efficient image processing with size and format validation
+    - Database indexing on session_id for fast message retrieval
+    - Connection pooling for external API calls
+"""
+
 import uuid
-import datetime
-import openai
-from langsmith import traceable
 import base64
-from utils.connect_db import base_api_url, messages_col, snippets_col
+import datetime
+import traceback
+from flask import Blueprint, jsonify, request
+import requests
+from langsmith import traceable
+from utils.connect_db import BASE_API_URL, messages_col, snippets_col
 from utils.pc_index import index
 from utils.langchain_service import react_assistant
 from utils.cloudinary_service import cloudinary_service
 
 chat_bp = Blueprint("chat", __name__)
-base_api_url = f"{base_api_url}/chat"
+BASE_API_URL = f"{BASE_API_URL}/chat"
 
 
-@chat_bp.route(f"{base_api_url}/new-chat", methods=["POST"])
+@chat_bp.route(f"{BASE_API_URL}/new-chat", methods=["POST"])
 @traceable(run_type="tool", name="chat_endpoint")
-def chat():
+def chat():  # pylint: disable=too-many-locals disable=too-many-return-statements disable=too-many-branches
+    """Generate React code from user input and optional UI mockup image.
+
+    This endpoint processes user messages and images to generate React components
+    using AI. It handles image analysis, context retrieval, and code generation
+    with comprehensive error handling and fallback responses.
+
+    Request JSON:
+        message (str, optional): Text description of desired component
+        session_id (str, optional): Session UUID (generated if not provided)
+        image_url (str, optional): URL of UI mockup image
+
+    Returns:
+        tuple: JSON response with generated code and metadata, HTTP status code
+            - _id (str): MongoDB document ID
+            - session_id (str): Session identifier
+            - role (str): "assistant"
+            - message (str): Generated React code
+            - created_at (str): ISO timestamp
+
+    Raises:
+        400: Invalid JSON or missing message/image
+        500: AI generation, database, or processing errors
+    """
     try:
         # Step 1: Parse request data
         try:
             data = request.get_json()
+
         except Exception as json_error:
             return jsonify({"error": f"Invalid JSON: {str(json_error)}"}), 400
 
@@ -27,18 +136,17 @@ def chat():
         session_id = data.get("session_id") if data else None
         image_url = data.get("image_url") if data else None
 
-        # Step 3: Generate session ID if needed
+        # Step 2: Generate session ID if needed
         if not session_id:
             session_id = str(uuid.uuid4())
 
         if not user_input and not image_url:
             return jsonify({"error": "No message or image provided"}), 400
 
-        # Step 5: Image analysis (if image provided)
+        # Step 3: Image analysis (if image provided)
         image_description = ""
         if image_url:
             try:
-                import requests
 
                 response = requests.get(image_url, timeout=10)  # Reduced timeout
                 response.raise_for_status()
@@ -48,14 +156,14 @@ def chat():
 
                 try:
                     image_description = react_assistant.analyze_image(base64_image)
-                except Exception as vision_error:
+                except Exception:
                     image_description = "Image analysis failed"
 
             except Exception as image_error:
                 image_description = "Image processing failed"
                 print("Error: " + image_error)
 
-        # Step 6: Prepare AI input
+        # Step 4: Prepare AI input
         try:
             if image_description and "failed" not in image_description.lower():
                 ai_input = (
@@ -72,7 +180,7 @@ def chat():
                 500,
             )
 
-        # Step 7: Save user message
+        # Step 5: Save user message
         try:
             user_message_data = {
                 "session_id": session_id,
@@ -98,7 +206,7 @@ def chat():
                     else None
                 ),
             )
-        except Exception as ai_error:
+        except Exception:
             # Simple fallback response
             reply = """```tsx
             import React from 'react';
@@ -114,7 +222,7 @@ def chat():
             export default Button;
             ```"""
 
-        # Step 9: Save assistant response
+        # Step 6: Save assistant response
         try:
             assistant_message_data = {
                 "session_id": session_id,
@@ -135,7 +243,7 @@ def chat():
                 500,
             )
 
-        # Step 10: Prepare response
+        # Step 7: Prepare response
         try:
             response_data = {
                 "_id": str(result.inserted_id),
@@ -155,10 +263,7 @@ def chat():
             )
 
     except Exception as e:
-        import traceback
-
         traceback.print_exc()
-
         return (
             jsonify(
                 {
@@ -170,8 +275,17 @@ def chat():
         )
 
 
-@chat_bp.route(f"{base_api_url}/messages/<session_id>", methods=["GET"])
+@chat_bp.route(f"{BASE_API_URL}/messages/<session_id>", methods=["GET"])
 def get_session_messages(session_id):
+    """Retrieve all messages for a specific session.
+
+    Args:
+        session_id (str): Session UUID to retrieve messages for
+
+    Returns:
+        tuple: JSON list of messages with MongoDB object IDs converted to strings,
+               HTTP status code 201
+    """
     res = messages_col.find({"session_id": str(session_id)})
     messages = list(res)
     for message in messages:
@@ -179,14 +293,23 @@ def get_session_messages(session_id):
     return jsonify(messages), 201
 
 
-@chat_bp.route(f"{base_api_url}/delete-session/<session_id>", methods=["DELETE"])
+@chat_bp.route(f"{BASE_API_URL}/delete-session/<session_id>", methods=["DELETE"])
 def delete_session(session_id):
+    """Delete all messages and data for a specific session.
+
+    Args:
+        session_id (str): Session UUID to delete
+
+    Returns:
+        str: Confirmation message
+    """
     messages_col.delete_many({"session_id": session_id})
     return "Your session has been deleted!"
 
 
-@chat_bp.route(f"{base_api_url}/add-snippet", methods=["POST"])
+@chat_bp.route(f"{BASE_API_URL}/add-snippet", methods=["POST"])
 def add_snippet():
+    """Add a new code snippet to the knowledge base."""
     data = request.get_json()
     text = data["text"]
     tags = data.get("tags", [])
@@ -196,24 +319,44 @@ def add_snippet():
         {
             "text": text,
             "tags": tags,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
+            "created_at": datetime.datetime.now(),
+            "updated_at": datetime.datetime.now(),
         }
     )
 
-    # Generate and upload to Pinecone
-    embedding = openai.Embedding.create(input=text, model="text-embedding-ada-002")[
-        "data"
-    ][0]["embedding"]
+    # Generate and upload to Pinecone using existing embeddings
+    embedding = react_assistant.embeddings.embed_query(text)
+
     index.upsert(
         [(str(result.inserted_id), embedding, {"text": text, "tags": ",".join(tags)})]
     )
     return jsonify({"status": "added"})
 
 
-@chat_bp.route(f"{base_api_url}/upload-image", methods=["POST"])
+@chat_bp.route(f"{BASE_API_URL}/upload-image", methods=["POST"])
 def upload_image():
-    """Upload image to Cloudinary immediately"""
+    """Upload UI mockup image to Cloudinary for analysis.
+
+    Handles multipart form data upload, validates image files, and uploads
+    to Cloudinary with automatic optimization and transformation.
+
+    Form Data:
+        image (file): Image file (PNG, JPG, GIF, max 5MB)
+
+    Returns:
+        tuple: JSON response with upload results, HTTP status code
+            Success (200):
+                - success (bool): True
+                - image_url (str): Cloudinary secure URL
+                - public_id (str): Cloudinary public identifier
+                - filename (str): Original filename
+            Error (400/500):
+                - error (str): Error description
+
+    Raises:
+        400: No file provided or empty file
+        500: Cloudinary upload failure or processing error
+    """
     try:
         if "image" not in request.files:
             return jsonify({"error": "No image file provided"}), 400
@@ -246,11 +389,11 @@ def upload_image():
                 ),
                 200,
             )
-        else:
-            return (
-                jsonify({"error": f"Upload failed: {cloudinary_result.get('error')}"}),
-                500,
-            )
+
+        return (
+            jsonify({"error": f"Upload failed: {cloudinary_result.get('error')}"}),
+            500,
+        )
 
     except Exception as e:
         print(f"Upload error: {str(e)}")

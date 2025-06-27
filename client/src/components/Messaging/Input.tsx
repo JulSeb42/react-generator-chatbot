@@ -2,6 +2,7 @@ import { useState, useRef, type KeyboardEvent } from "react"
 import { BiImage, BiSend, BiTrash, BiX } from "react-icons/bi"
 import axios from "axios"
 import { toast } from "react-toastify"
+import { useDebounce } from "use-debounce"
 import { chatService } from "api"
 import { clsx } from "utils"
 import { ButtonIcon } from "components/ButtonIcon"
@@ -21,6 +22,7 @@ export const Input: FC<IInput> = ({
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false)
 
 	const [message, setMessage] = useState("")
+	const [debouncedMessage] = useDebounce(message, 500)
 	const [selectedImage, setSelectedImage] = useState<File | null>(null)
 	const [imagePreview, setImagePreview] = useState<string | null>(null)
 	const [cloudinaryUrl, setCloudinaryUrl] = useState<string | null>(null)
@@ -130,7 +132,6 @@ export const Input: FC<IInput> = ({
 		const cloudinaryUrl = await uploadToCloudinary(file)
 		if (cloudinaryUrl) {
 			setCloudinaryUrl(cloudinaryUrl)
-			toast.success("Image uploaded successfully!")
 		}
 	}
 
@@ -178,75 +179,81 @@ export const Input: FC<IInput> = ({
 		// Fix the condition here
 		if (!message.trim() && !cloudinaryUrl) return
 
-		setIsLoading(true)
+		setTimeout(async () => {
+			const currentMessage = debouncedMessage
+			const currentCloudinaryUrl = cloudinaryUrl
+			const currentSessionId = session_id
 
-		const currentMessage = message
-		const currentCloudinaryUrl = cloudinaryUrl
-		const currentSessionId = session_id
+			// Create a unique temporary ID for the user message
+			const tempUserId = `temp-user-${Date.now()}-${Math.random()}`
 
-		// Create a unique temporary ID for the user message
-		const tempUserId = `temp-user-${Date.now()}-${Math.random()}`
+			// Clear inputs immediately
+			setMessage("")
+			removeImage()
 
-		// Clear inputs immediately
-		setMessage("")
-		removeImage()
-
-		// Add user message to UI immediately with temp ID
-		const userMessage = {
-			_id: tempUserId,
-			message: currentMessage || "Generate React code for this UI mockup",
-			session_id: currentSessionId ?? null,
-			role: "user" as const,
-			created_at: new Date().toString(),
-			image_url: currentCloudinaryUrl ?? undefined,
-		}
-
-		setChats(prevChats => [...prevChats, userMessage])
-
-		try {
-			const response = await chatService.newChat({
+			// Add user message to UI immediately with temp ID
+			const userMessage = {
+				_id: tempUserId,
 				message:
 					currentMessage || "Generate React code for this UI mockup",
-				session_id: currentSessionId ?? "",
-				image_url: currentCloudinaryUrl,
-			})
-
-			// Update session if new one was created
-			if (!currentSessionId && response?.data?.session_id) {
-				localStorage.setItem("session_id", response.data.session_id)
+				session_id: currentSessionId ?? null,
+				role: "user" as const,
+				created_at: new Date().toString(),
+				image_url: currentCloudinaryUrl ?? undefined,
 			}
 
-			// Validate the response before adding it
-			if (
-				response?.data &&
-				response.data.role === "assistant" &&
-				response.data.message
-			) {
-				const assistantMessage = {
-					_id: response.data._id || `assistant-${Date.now()}`,
-					session_id: response.data.session_id,
-					role: "assistant" as const,
-					message: response.data.message,
-					created_at:
-						response.data.created_at || new Date().toString(),
+			setChats(prevChats => [...prevChats, userMessage])
+
+			try {
+				const response = await chatService.newChat({
+					message:
+						currentMessage ||
+						"Generate React code for this UI mockup",
+					session_id: currentSessionId ?? "",
+					image_url: currentCloudinaryUrl,
+				})
+
+				// Update session if new one was created
+				if (!currentSessionId && response?.data?.session_id) {
+					localStorage.setItem("session_id", response.data.session_id)
 				}
 
-				setChats(prevChats => [...prevChats, assistantMessage])
-			} else {
-				console.error("Invalid response format:", response.data)
-				throw new Error("Invalid response format from server")
-			}
-		} catch (err: any) {
-			console.error("=== CHAT ERROR ===", err)
-			toast.error(`Error: ${err.response?.data?.error || err.message}`)
+				// Validate the response before adding it
+				if (
+					response?.data &&
+					response.data.role === "assistant" &&
+					response.data.message
+				) {
+					const assistantMessage = {
+						_id: response.data._id || `assistant-${Date.now()}`,
+						session_id: response.data.session_id,
+						role: "assistant" as const,
+						message: response.data.message,
+						created_at:
+							response.data.created_at || new Date().toString(),
+					}
 
-			// Remove the user message on error using the temp ID
-			setChats(prevChats =>
-				prevChats.filter(chat => chat._id !== tempUserId),
-			)
-		} finally {
-			setIsLoading(false)
-		}
+					setChats(prevChats => [...prevChats, assistantMessage])
+				} else {
+					console.error("Invalid response format:", response.data)
+					throw new Error("Invalid response format from server")
+				}
+			} catch (err: any) {
+				console.error("=== CHAT ERROR ===", err)
+				toast.error(
+					`Error: ${err.response?.data?.error || err.message}`,
+				)
+
+				// Remove the user message on error using the temp ID
+				setChats(prevChats =>
+					prevChats.filter(chat => chat._id !== tempUserId),
+				)
+			} finally {
+				setIsLoading(false)
+			}
+		}, 500)
+
+		setIsLoading(true)
 	}
 
 	return (

@@ -1,8 +1,14 @@
+"""Cloudinary service
+Uploads images to Cloudinary
+"""
+
+import time
+import uuid
+import traceback
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
-import uuid
-import time
+from cloudinary.exceptions import Error as CloudinaryError
 from utils.consts import (
     CLOUDINARY_CLOUD_NAME,
     CLOUDINARY_API_KEY,
@@ -18,8 +24,10 @@ try:
         secure=True,
     )
     print("✅ Cloudinary configured successfully")
-except Exception as e:
+except CloudinaryError as e:
     print(f"❌ Cloudinary configuration error: {e}")
+except ValueError as e:
+    print(f"❌ Configuration value error: {e}")
 
 
 class CloudinaryService:
@@ -78,11 +86,19 @@ class CloudinaryService:
                 "version": result.get("version"),
             }
 
+        except CloudinaryError as e:
+            print(f"❌ Cloudinary upload error: {e}")
+            return {"success": False, "error": f"Cloudinary error: {str(e)}"}
+        except (ValueError, TypeError) as e:
+            print(f"❌ Data validation error: {e}")
+            return {"success": False, "error": f"Invalid data: {str(e)}"}
+        except OSError as e:
+            print(f"❌ File system error: {e}")
+            return {"success": False, "error": f"File error: {str(e)}"}
         except Exception as e:
-            import traceback
-
+            print(f"❌ Unexpected error: {e}")
             traceback.print_exc()
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": f"Unexpected error: {str(e)}"}
 
     @staticmethod
     def delete_image(public_id: str):
@@ -99,8 +115,10 @@ class CloudinaryService:
             result = cloudinary.uploader.destroy(public_id)
             return result
 
-        except Exception as e:
-            return {"error": str(e)}
+        except CloudinaryError as e:
+            return {"error": f"Cloudinary error: {str(e)}"}
+        except ValueError as e:
+            return {"error": f"Invalid public_id: {str(e)}"}
 
     @staticmethod
     def get_image_info(public_id: str):
@@ -125,9 +143,12 @@ class CloudinaryService:
                 "bytes": result.get("bytes"),
                 "created_at": result.get("created_at"),
             }
-        except Exception as e:
+        except CloudinaryError as e:
             print(f"Error getting image info: {str(e)}")
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": f"Cloudinary error: {str(e)}"}
+        except ValueError as e:
+            print(f"Invalid public_id: {str(e)}")
+            return {"success": False, "error": f"Invalid public_id: {str(e)}"}
 
     @staticmethod
     def list_images(folder: str = "ironhack-final-project", max_results: int = 50):
@@ -150,9 +171,12 @@ class CloudinaryService:
                 "images": result.get("resources", []),
                 "total_count": result.get("total_count", 0),
             }
-        except Exception as e:
+        except CloudinaryError as e:
             print(f"Error listing images: {str(e)}")
-            return {"success": False, "error": str(e)}
+            return {"success": False, "error": f"Cloudinary error: {str(e)}"}
+        except ValueError as e:
+            print(f"Invalid parameters: {str(e)}")
+            return {"success": False, "error": f"Invalid parameters: {str(e)}"}
 
 
 # Create service instance
