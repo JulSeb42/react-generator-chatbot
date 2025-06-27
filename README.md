@@ -2,6 +2,8 @@
 
 An AI-powered React component generation service that creates React components from text descriptions and UI mockup images using OpenAI's GPT-4 and Vision models, enhanced with vector similarity search.
 
+[See the project here](https://ironhack-react-chatbot.vercel.app/)
+
 **Created by [Julien Sebag](https://julien-sebag.com/) for the Ironhack AI Bootcamp Final Project**
 
 ## 🚀 Features
