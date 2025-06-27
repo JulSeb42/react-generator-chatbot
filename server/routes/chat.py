@@ -100,35 +100,12 @@ BASE_API_URL = f"{BASE_API_URL}/chat"
 
 @chat_bp.route(f"{BASE_API_URL}/new-chat", methods=["POST"])
 @traceable(run_type="tool", name="chat_endpoint")
-def chat():  # pylint: disable=too-many-locals disable=too-many-return-statements disable=too-many-branches
-    """Generate React code from user input and optional UI mockup image.
-
-    This endpoint processes user messages and images to generate React components
-    using AI. It handles image analysis, context retrieval, and code generation
-    with comprehensive error handling and fallback responses.
-
-    Request JSON:
-        message (str, optional): Text description of desired component
-        session_id (str, optional): Session UUID (generated if not provided)
-        image_url (str, optional): URL of UI mockup image
-
-    Returns:
-        tuple: JSON response with generated code and metadata, HTTP status code
-            - _id (str): MongoDB document ID
-            - session_id (str): Session identifier
-            - role (str): "assistant"
-            - message (str): Generated React code
-            - created_at (str): ISO timestamp
-
-    Raises:
-        400: Invalid JSON or missing message/image
-        500: AI generation, database, or processing errors
-    """
+def chat():  # pylint: disable=too-many-locals,too-many-return-statements,too-many-branches
+    """Generate React code from user input and optional UI mockup image."""
     try:
         # Step 1: Parse request data
         try:
             data = request.get_json()
-
         except Exception as json_error:
             return jsonify({"error": f"Invalid JSON: {str(json_error)}"}), 400
 
@@ -143,12 +120,31 @@ def chat():  # pylint: disable=too-many-locals disable=too-many-return-statement
         if not user_input and not image_url:
             return jsonify({"error": "No message or image provided"}), 400
 
-        # Step 3: Image analysis (if image provided)
+        # Step 3: Check for boilerplate/starter requests
+        boilerplate_keywords = [
+            "boilerplate",
+            "starter",
+            "template",
+            "scaffold",
+            "setup",
+            "initial project",
+            "project setup",
+            "create project",
+            "new project",
+            "bootstrap",
+            "kickstart",
+            "foundation",
+        ]
+
+        is_boilerplate_request = any(
+            keyword in user_input.lower() for keyword in boilerplate_keywords
+        )
+
+        # Step 4: Image analysis (if image provided)
         image_description = ""
         if image_url:
             try:
-
-                response = requests.get(image_url, timeout=10)  # Reduced timeout
+                response = requests.get(image_url, timeout=10)
                 response.raise_for_status()
                 image_data = response.content
 
@@ -161,9 +157,9 @@ def chat():  # pylint: disable=too-many-locals disable=too-many-return-statement
 
             except Exception as image_error:
                 image_description = "Image processing failed"
-                print("Error: " + image_error)
+                print("Error: " + str(image_error))
 
-        # Step 4: Prepare AI input
+        # Step 5: Prepare AI input
         try:
             if image_description and "failed" not in image_description.lower():
                 ai_input = (
@@ -180,7 +176,7 @@ def chat():  # pylint: disable=too-many-locals disable=too-many-return-statement
                 500,
             )
 
-        # Step 5: Save user message
+        # Step 6: Save user message
         try:
             user_message_data = {
                 "session_id": session_id,
@@ -197,32 +193,60 @@ def chat():  # pylint: disable=too-many-locals disable=too-many-return-statement
                 jsonify({"error": f"Failed to save user message: {str(save_error)}"}),
                 500,
             )
-        try:
-            reply = react_assistant.generate_code(
-                user_input=ai_input,
-                image_description=(
-                    image_description
-                    if image_description and "failed" not in image_description.lower()
-                    else None
-                ),
-            )
-        except Exception:
-            # Simple fallback response
-            reply = """```tsx
-            import React from 'react';
-            
-            const Button = () => {
-                return (
-                    <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                        Click me
-                    </button>
-                );
-            };
-            
-            export default Button;
-            ```"""
 
-        # Step 6: Save assistant response
+            # Step 7: Generate AI response
+        try:
+            # For boilerplate requests, only show CLI recommendation
+            if is_boilerplate_request:
+                reply = """🚀 **For complete project setup, check out my CLI tool:**
+
+```bash
+npx @julseb-lib/julseb-cli
+```
+
+This CLI provides ready-to-use project templates and boilerplates for React, Express, and more!
+
+📦 **Package:** https://www.npmjs.com/package/@julseb-lib/julseb-cli"""
+            else:
+                # Generate normal AI response for non-boilerplate requests
+                reply = react_assistant.generate_code(
+                    user_input=ai_input,
+                    image_description=(
+                        image_description
+                        if image_description
+                        and "failed" not in image_description.lower()
+                        else None
+                    ),
+                )
+
+        except Exception:
+            # Fallback responses
+            if is_boilerplate_request:
+                reply = """🚀 **For complete project setup, check out my CLI tool:**
+
+```bash
+npx @julseb-lib/julseb-cli
+```
+
+This CLI provides ready-to-use project templates and boilerplates for React, Next.js, and more!
+
+📦 **Package:** https://www.npmjs.com/package/@julseb-lib/julseb-cli"""
+            else:
+                reply = """```tsx
+import React from 'react';
+
+const Button = () => {
+    return (
+        <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+            Click me
+        </button>
+    );
+};
+
+export default Button;
+```"""
+
+        # Step 8: Save assistant response
         try:
             assistant_message_data = {
                 "session_id": session_id,
@@ -243,7 +267,7 @@ def chat():  # pylint: disable=too-many-locals disable=too-many-return-statement
                 500,
             )
 
-        # Step 7: Prepare response
+        # Step 9: Prepare response
         try:
             response_data = {
                 "_id": str(result.inserted_id),
