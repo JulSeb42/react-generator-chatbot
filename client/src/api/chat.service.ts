@@ -26,6 +26,12 @@ class ChatService {
 		}
 	}
 
+	async uploadImage(data: FormData) {
+		return await http.post(PATHS.UPLOAD_IMAGE, data, {
+			headers: { "Content-Type": "multipart/form-data" },
+		})
+	}
+
 	newMessage(session_id: string, message: string): ApiResponse<Array<Chat>> {
 		return http.put(PATHS.NEW_MESSAGE(session_id), message)
 	}

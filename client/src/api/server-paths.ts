@@ -10,6 +10,7 @@ export const SERVER_PATHS = {
 		NEW_CHAT: `${SERVER_PATHS_ROOT.CHAT}/new-chat`,
 		NEW_MESSAGE: (session_id = ":session_id") =>
 			`${SERVER_PATHS_ROOT.CHAT}/new-message/${session_id}`,
+		UPLOAD_IMAGE: `${SERVER_PATHS_ROOT.CHAT}/upload-image`,
 		SESSION_MESSAGES: (session_id = ":session_id") =>
 			`${SERVER_PATHS_ROOT.CHAT}/messages/${session_id}`,
 		DELETE_SESSION: (session_id = ":session_id") =>

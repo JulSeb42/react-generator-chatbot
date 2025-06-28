@@ -1,8 +1,6 @@
 import { useState, useRef, type KeyboardEvent } from "react"
 import { BiImage, BiSend, BiTrash, BiX } from "react-icons/bi"
-import axios from "axios"
 import { toast } from "react-toastify"
-import { useDebounce } from "use-debounce"
 import { chatService } from "api"
 import { clsx } from "utils"
 import { ButtonIcon } from "components/ButtonIcon"
@@ -22,7 +20,6 @@ export const Input: FC<IInput> = ({
 	const [isDeleteOpen, setIsDeleteOpen] = useState(false)
 
 	const [message, setMessage] = useState("")
-	const [debouncedMessage] = useDebounce(message, 500)
 	const [selectedImage, setSelectedImage] = useState<File | null>(null)
 	const [imagePreview, setImagePreview] = useState<string | null>(null)
 	const [cloudinaryUrl, setCloudinaryUrl] = useState<string | null>(null)
@@ -51,30 +48,19 @@ export const Input: FC<IInput> = ({
 	}
 
 	const uploadToCloudinary = async (file: File): Promise<string | null> => {
-		try {
-			setIsUploading(true)
+		setIsUploading(true)
 
-			const formData = new FormData()
-			formData.append("image", file, file.name)
+		const formData = new FormData()
+		formData.append("image", file, file.name)
 
-			const response = await axios.post(
-				"http://localhost:8000/api/chat/upload-image",
-				formData,
-				{
-					headers: {
-						"Content-Type": "multipart/form-data",
-					},
-				},
-			)
-
-			return response.data.image_url
-		} catch (error) {
-			console.error("❌ Cloudinary upload failed:", error)
-			toast.error("Failed to upload image")
-			return null
-		} finally {
-			setIsUploading(false)
-		}
+		return chatService
+			.uploadImage(formData)
+			.then(res => res.data.image_url)
+			.catch(err => {
+				console.error("❌ Cloudinary upload failed: ", err)
+				toast.error("Failed to upload image")
+			})
+			.finally(() => setIsUploading(false))
 	}
 
 	const processFile = async (file: File) => {
@@ -180,7 +166,6 @@ export const Input: FC<IInput> = ({
 		if (!message.trim() && !cloudinaryUrl) return
 
 		setTimeout(async () => {
-			const currentMessage = debouncedMessage
 			const currentCloudinaryUrl = cloudinaryUrl
 			const currentSessionId = session_id
 
@@ -194,8 +179,7 @@ export const Input: FC<IInput> = ({
 			// Add user message to UI immediately with temp ID
 			const userMessage = {
 				_id: tempUserId,
-				message:
-					currentMessage || "Generate React code for this UI mockup",
+				message: message || "Generate React code for this UI mockup",
 				session_id: currentSessionId ?? null,
 				role: "user" as const,
 				created_at: new Date().toString(),
@@ -207,8 +191,7 @@ export const Input: FC<IInput> = ({
 			try {
 				const response = await chatService.newChat({
 					message:
-						currentMessage ||
-						"Generate React code for this UI mockup",
+						message || "Generate React code for this UI mockup",
 					session_id: currentSessionId ?? "",
 					image_url: currentCloudinaryUrl,
 				})

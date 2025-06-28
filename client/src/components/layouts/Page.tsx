@@ -17,7 +17,7 @@ export const Page: FC<IPage> = ({
 			/>
 
 			<section className="flex justify-center">
-				<main className="flex flex-col gap-6 mx-auto p-12 w-full max-w-[800px] h-svh">
+				<main className="flex flex-col gap-6 mx-auto py-12 w-full max-w-[800px] h-svh">
 					{children}
 				</main>
 			</section>
