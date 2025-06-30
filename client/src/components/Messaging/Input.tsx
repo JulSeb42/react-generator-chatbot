@@ -254,6 +254,7 @@ export const Input: FC<IInput> = ({
 						alt="Selected"
 						className="border border-gray-300 rounded-lg max-h-32"
 					/>
+					
 					<button
 						type="button"
 						onClick={removeImage}
@@ -261,6 +262,7 @@ export const Input: FC<IInput> = ({
 					>
 						<BiX size={16} />
 					</button>
+					
 					{isUploading && (
 						<div className="absolute inset-0 flex justify-center items-center bg-black bg-opacity-50 rounded-lg">
 							<span className="text-white text-sm">
@@ -268,6 +270,7 @@ export const Input: FC<IInput> = ({
 							</span>
 						</div>
 					)}
+					
 					{cloudinaryUrl && !isUploading && (
 						<div className="right-0 bottom-0 left-0 absolute bg-green-500 p-1 rounded-b-lg text-white text-xs">
 							✅ Uploaded

@@ -198,7 +198,7 @@ def chat():  # pylint: disable=too-many-locals,too-many-return-statements,too-ma
         try:
             # For boilerplate requests, only show CLI recommendation
             if is_boilerplate_request:
-                reply = """🚀 **For complete project setup, check out my CLI tool:**
+                reply = """🚀 **For complete project setup, check out this CLI tool:**
 
 ```bash
 npx @julseb-lib/julseb-cli

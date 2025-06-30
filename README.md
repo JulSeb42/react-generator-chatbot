@@ -26,9 +26,10 @@ An AI-powered React component generation service that creates React components f
 - **Cloudinary** - Image hosting and processing
 - **LangChain** - AI orchestration and prompt management
 - **LangSmith** - AI operation monitoring
+- **HuggingFace** - Dataset for React code
 
 ### Frontend (React/TypeScript)
-- **React 18** - UI framework
+- **React 19** - UI framework
 - **TypeScript** - Type safety
 - **Vite** - Build tool
 - **Tailwind CSS** - Styling
