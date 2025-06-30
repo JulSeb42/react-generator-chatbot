@@ -66,7 +66,7 @@ import os
 from pinecone import ServerlessSpec
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from app import client  # pylint: disable=wrong-import-position
+from server.api.app import client  # pylint: disable=wrong-import-position
 from utils.pc_index import pc  # pylint: disable=wrong-import-position
 
 PC_INDEX = "ironhack-final-project"

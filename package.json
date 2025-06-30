@@ -6,7 +6,7 @@
 	"license": "MIT",
 	"scripts": {
 		"server": "cd server && flask --app app run --port=5005 --reload",
-		"gunicorn": "cd server && gunicorn --timeout 400 --workers 1 app:app --reload",
+		"gunicorn": "cd server/api && gunicorn --timeout 400 --workers 1 app:app --reload",
 		"serve": "gunicorn server.app:app",
 		"client": "cd client && yarn dev",
 		"dev": "concurrently --kill-others 'yarn gunicorn' 'yarn client'",
