@@ -4,7 +4,7 @@ An AI-powered React component generation service that creates React components f
 
 [See the project here](https://ironhack-react-chatbot.vercel.app/)
 
-**Created by [Julien Sebag](https://julien-sebag.com/) for the Ironhack AI Bootcamp Final Project**
+[Find the presentation here](https://docs.google.com/presentation/d/1b6086L7EfPGWCi7Og45-0qaXLN9xHxr7EoGSh2qGabU/edit?usp=sharing)
 
 ## 🚀 Features
 
